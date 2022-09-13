@@ -36,4 +36,4 @@ class CallPmaw:
 
         df.to_csv(file)
 
-        print('Data saved to ' + file)
+        print('Data saved to ' + file + '\n')

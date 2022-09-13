@@ -1,8 +1,9 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox, filedialog, ttk
 from tktimepicker import SpinTimePickerModern, constants
 import time
 import search_pmaw
+from checklist import Checklist
 
 
 data_dict = {}
@@ -68,7 +69,7 @@ def start_data():
 
     data_dict['limit'] = int(limit_strvar.get())
 
-    data_dict['fields'] = fields_listbox.selection_get().splitlines()
+    data_dict['fields'] = fields_checklist.get_checked_items()
     if len(data_dict['fields']) <= 0:
         data_dict['fields'] = None
 
@@ -85,7 +86,6 @@ def start_data():
     else:
         try:
             data_dict['after'] = date_to_epoch(after_date_strvar.get()) + time_to_epoch(after_time_picker.time())
-            print(data_dict['after'])
         except:
             raise_error('The date must be formatted using D/M/YYYY or D-M-YYYY', 'Date Entry Error')
             return
@@ -101,6 +101,9 @@ def start_data():
 
     if file_str != '':
         data_dict['file'] = file_str
+    else:
+        raise_error('You must select a file before running the search', 'File Select Error')
+        return
 
     if data_dict['q'] == None and data_dict['author'] == None and data_dict['subreddit'] == None:
         if not messagebox.askokcancel(message='Data collection is unpredictable if no query, subreddit, or author is defined', title='Data Warning'):
@@ -115,25 +118,25 @@ def start_data():
 
 
 def reset_fields():
-    fields_listbox.selection_set(0)
-    fields_listbox.selection_clear(1)
-    fields_listbox.selection_clear(2)
-    fields_listbox.selection_clear(3)
-    fields_listbox.selection_clear(4)
-    fields_listbox.selection_set(5)
-    fields_listbox.selection_set(6)
-    fields_listbox.selection_set(7)
-    fields_listbox.selection_clear(8)
-    fields_listbox.selection_clear(9)
-    fields_listbox.selection_clear(10)
-    fields_listbox.selection_clear(11)
-    fields_listbox.selection_clear(12)
-    fields_listbox.selection_clear(13)
-    fields_listbox.selection_clear(14)
-    fields_listbox.selection_set(15)
-    fields_listbox.selection_clear(16)
-    fields_listbox.selection_set(17)
-    fields_listbox.selection_clear(18)
+    fields_checklist.select(0)
+    fields_checklist.deselect(1)
+    fields_checklist.deselect(2)
+    fields_checklist.deselect(3)
+    fields_checklist.deselect(4)
+    fields_checklist.select(5)
+    fields_checklist.select(6)
+    fields_checklist.select(7)
+    fields_checklist.deselect(8)
+    fields_checklist.deselect(9)
+    fields_checklist.deselect(10)
+    fields_checklist.deselect(11)
+    fields_checklist.deselect(12)
+    fields_checklist.deselect(13)
+    fields_checklist.deselect(14)
+    fields_checklist.select(15)
+    fields_checklist.deselect(16)
+    fields_checklist.select(17)
+    fields_checklist.deselect(18)
 
 
 vcmd = (root.register(check_limit_digit), '%P')
@@ -168,7 +171,7 @@ file_str = ''
 q_entry = tk.Entry(frame_main, textvariable=q_strvar)
 #ids_entry = tk.Entry(frame_main, textvariable=ids_strvar) TODO add ids
 limit_entry = tk.Entry(frame_main, textvariable=limit_strvar, validate='all', validatecommand=vcmd)
-fields_listbox = tk.Listbox(frame_main, listvariable=fields_strvar, selectmode='multiple')
+fields_checklist = Checklist(frame_main, listvariable=fields_list)
 author_entry = tk.Entry(frame_main, textvariable=author_strvar)
 subreddit_entry = tk.Entry(frame_main, textvariable=subreddit_strvar)
 after_date_entry = tk.Entry(frame_main, textvariable=after_date_strvar)
@@ -179,8 +182,6 @@ default_fields_button = tk.Button(frame_main, text='Set Fields to Default', comm
 file_button = tk.Button(frame_main, text='Select CSV File', command=select_file)
 
 reset_fields()
-fields_scrollbar = tk.Scrollbar(frame_main, command=fields_listbox.yview)
-fields_listbox.configure(yscrollcommand=fields_scrollbar.set)
 
 after_time_picker.addAll(constants.HOURS12)
 after_time_picker.configureAll(bg="#dddddd", width=4, hoverbg="#aaaaaa", clickedbg="#000000", clickedcolor="#ffffff")
@@ -191,12 +192,13 @@ before_time_picker.configureAll(bg="#dddddd", width=4, hoverbg="#aaaaaa", clicke
 before_time_picker.configure_separator(bg="#dddddd")
 before_time_picker.setMins(0)
 
+seperator1 = ttk.Separator(frame_main, orient='vertical')
 run_button = tk.Button(frame_main, text='Run', command=start_data)
 
 q_label.grid(row=0, column=0, sticky='w')
+fields_label.grid(row=0, column=4, rowspan=11, sticky='w')
 #ids_label.grid(row=1, column=0, sticky='w') TODO add ids
 limit_label.grid(row=1, column=0, sticky='w')
-fields_label.grid(row=2, column=0, sticky='w')
 author_label.grid(row=4, column=0, sticky='w')
 subreddit_label.grid(row=5, column=0, sticky='w')
 after_date_label.grid(row=6, column=0, sticky='w')
@@ -207,11 +209,10 @@ file_label.grid(row=10, column=0, sticky='w')
 running_label.grid(row=11, column=2)
 
 q_entry.grid(row=0, column=2)
+fields_checklist.grid(row=0, column=5, rowspan=11)
 #ids_entry.grid(row=1, column=2) TODO add ids
 limit_entry.grid(row=1, column=2)
-fields_listbox.grid(row=2, column=2)
-fields_scrollbar.grid(row=2, column=3, sticky="nsw")
-default_fields_button.grid(row=3, column=2, sticky='n')
+default_fields_button.grid(row=11, column=5)
 author_entry.grid(row=4, column=2)
 subreddit_entry.grid(row=5, column=2)
 after_date_entry.grid(row=6, column=2)
@@ -220,12 +221,13 @@ before_date_entry.grid(row=8, column=2)
 before_time_picker.grid(row=9, column=2)
 file_button.grid(row=10, column=2)
 
+seperator1.grid(row=0, column=3, rowspan=12, ipady=220) #TODO dynamically resize seperator
 run_button.grid(row=11, column=1)
 
 frame_main.rowconfigure(0, pad=20)
 frame_main.rowconfigure(1, pad=20)
 frame_main.rowconfigure(2, pad=20)
-#frame_main.rowconfigure(3, pad=20)
+frame_main.rowconfigure(3, pad=20)
 frame_main.rowconfigure(4, pad=20)
 frame_main.rowconfigure(5, pad=20)
 frame_main.rowconfigure(6, pad=20)
@@ -234,6 +236,13 @@ frame_main.rowconfigure(8, pad=20)
 frame_main.rowconfigure(9, pad=20)
 frame_main.rowconfigure(10, pad=20)
 frame_main.rowconfigure(11, pad=20)
+
+frame_main.columnconfigure(0, pad=20)
+frame_main.columnconfigure(1, pad=20)
+frame_main.columnconfigure(2, pad=20)
+frame_main.columnconfigure(3, pad=20)
+frame_main.columnconfigure(4, pad=20)
+frame_main.columnconfigure(5, pad=20)
 
 
 main()
