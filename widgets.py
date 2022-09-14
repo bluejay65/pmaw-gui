@@ -62,6 +62,9 @@ class LabelEntry(tk.Frame):
         self.label.grid(row=0, column=0, sticky='w')
         self.entry.grid(row=0, column=1)
 
+        self.columnconfigure(0, pad=20)
+        self.columnconfigure(1, pad=20)
+
     # Returns the string in the entry
     def get_entry(self):
         return self.entry_str.get()
@@ -82,7 +85,7 @@ class LabelEntryList(tk.Frame):
             label_entry = LabelEntry(self, text=listvariable[i])
             self.label_entry_dict[listvariable[i]] = label_entry
 
-            label_entry.grid(row=0, column=i)
+            label_entry.grid(row=i, column=0)
 
     # Returns the string in the entry corresponding to the label provided
     def get_entry(self, label: str):

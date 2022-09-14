@@ -8,14 +8,10 @@ class CommentGUI(tk.Frame):#base_gui.BaseGUI):
     def __init__(self, parent, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
 
-        self.search_fields = ['Search term', 'Max results', 'Author', 'Subreddit', 'Commented After', 'Commented Before']
+        self.search_fields = ['Search term', 'Max results', 'Author', 'Subreddit']
 
         self.label_entries = w.LabelEntryList(self, self.search_fields)
         self.label_entries.grid(row=0, column=0)
-
-    def get_label_entry(self):
-        for label in self.search_fields:
-            print(self.label_entries.get_entry(label))
 
     def start_data(self):
         data_dict = {}
@@ -78,6 +74,6 @@ frame_main = tk.Frame(root, padx=20)
 frame_main.grid(sticky='news')
 
 comments = CommentGUI(frame_main)
-comments.get_label_entry()
+comments.grid(row=0, column=0)
 
 root.mainloop()
