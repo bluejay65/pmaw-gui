@@ -158,6 +158,13 @@ class PeriodLabel(tkinter.Frame):
     def changePeriod(self, event):
         self._current_period = event.widget.cget("text")
 
+    def setPeriod(self, period):
+        if period in [constants.AM, constants.PM]:
+            self._current_period = period
+
+        else:
+            raise ValueError(f"Unknown value {defaultperiod} Use AM/PM")
+
     def period(self):
         """ returns period """
         return self._current_period

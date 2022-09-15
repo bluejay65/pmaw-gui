@@ -1,17 +1,66 @@
 #import base_gui
 import tkinter as tk
 from tkinter import messagebox
-import widgets as w
+from tkwidgets import LabelEntryList, Checklist, EntryType
 
 
 class CommentGUI(tk.Frame):#base_gui.BaseGUI):
+
+    search_fields = {
+                    'Search term': EntryType.ENTRY, 
+                    'Max results': EntryType.ENTRY, 
+                    'Author': EntryType.ENTRY, 
+                    'Subreddit': EntryType.ENTRY,
+                    'Posted after': EntryType.DATETIME,
+                    'Posted before': EntryType.DATETIME
+    }
+
+    return_fields = [
+                    'all_awardings',
+                    'archived',
+                    'author',
+                    'author_fullname',
+                    'body',
+                    'comment_type',
+                    'controversiality',
+                    'created_utc',
+                    'gilded',
+                    'id',
+                    'link_id',
+                    'locked',
+                    'parent_id',
+                    'permalink',
+                    'retrieved_utc',
+                    'score',
+                    'score_hidden',
+                    'send_replies',
+                    'stickied',
+                    'subreddit',
+                    'subreddit_id',
+                    'subreddit_name_prefixed',
+                    'subreddit_type',
+                    'total_awards_received',
+                    'treatment_tags'
+    ]
+
     def __init__(self, parent, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
 
-        self.search_fields = ['Search term', 'Max results', 'Author', 'Subreddit']
+        print(self.return_fields)
 
-        self.label_entries = w.LabelEntryList(self, self.search_fields)
-        self.label_entries.grid(row=0, column=0)
+        self.label_entries = LabelEntryList(self, self.search_fields)
+        self.label_entries.grid(row=0, column=0, sticky='nw')
+
+        self.label_entries.set_entry('Max results', 500)
+
+        self.return_entries_label = tk.Label(self, text='Data to Return')
+        self.return_entries = Checklist(self, self.return_fields, True)
+
+        self.return_entries_label.grid(row=0, column=1)
+        self.return_entries.grid(row=0, column=2)
+
+
+
 
     def start_data(self):
         data_dict = {}
