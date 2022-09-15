@@ -1,5 +1,5 @@
 import tkinter as tk
-import comment_gui
+import comment_gui, data_gui
 from tkinter import ttk
 
 
@@ -16,8 +16,10 @@ class PmawGUI():
         self.notebook.grid(sticky='news')
 
         self.comment_page = comment_gui.CommentGUI(self.notebook, self.root)
-
         self.notebook.add(self.comment_page, text='Comments')
+
+        self.data_page = data_gui.DataGUI(self.notebook, self.root)
+        self.notebook.add(self.data_page, text='Data')
 
         self.root.mainloop()
 

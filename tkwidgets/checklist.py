@@ -57,5 +57,8 @@ class Checklist(ttk.Labelframe):
             else:
                 self.checkbuttons[i].deselect()
 
+    def clear(self):
+        self.check_items([])
+
     def onFrameConfigure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))

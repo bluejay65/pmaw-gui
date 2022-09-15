@@ -1,0 +1,27 @@
+return_fields = [
+                    'all_awardings',            # 0
+                    'archived',                 # 1
+                    'author',                   # 2
+                    'author_fullname',          # 3
+                    'body',                     # 4
+                    'comment_type',             # 5
+                    'controversiality',         # 6
+                    'created_utc',              # 7
+                    'gilded',                   # 8 
+                    'id',                       # 9
+                    'link_id',                  # 10
+                    'locked',                   # 11
+                    'parent_id',                # 12
+                    'permalink',                # 13
+                    'retrieved_utc',            # 14
+                    'score',                    # 15
+                    'score_hidden',             # 16
+                    'send_replies',             # 17
+                    'stickied',                 # 18
+                    'subreddit',                # 19
+                    'subreddit_id',             # 20
+                    'subreddit_name_prefixed',  # 21
+                    'subreddit_type',           # 22 
+                    'total_awards_received',    # 23
+                    'treatment_tags'            # 24
+    ]
