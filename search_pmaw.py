@@ -17,11 +17,6 @@ class CallPmaw:
         after = dict['after']
         before = dict['before']
 
-        if 'file' not in dict:
-            file = os.path.dirname(os.path.realpath(__file__)) + '\\pmaw.csv'
-        else:
-            file = dict['file']
-
         if isinstance(after, int) and isinstance(before, int):
             comments = self.api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
         elif isinstance(after, int):
@@ -32,8 +27,13 @@ class CallPmaw:
             comments = self.api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
 
         comment_list = [comment for comment in comments]
-        df = pd.DataFrame(comment_list)
 
-        df.to_csv(file)
+        return pd.DataFrame(comment_list)
 
-        print('Data saved to ' + file + '\n')
+        
+
+    
+    def save_csv(self, dict, file):
+        self.get_df(dict).to_csv(file)
+
+        print('\nData saved to ' + file)

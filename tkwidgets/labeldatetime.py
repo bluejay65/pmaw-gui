@@ -1,5 +1,6 @@
 import tkinter as tk
 import tkwidgets as tkw
+import datetime
 
 
 # A frame containing a label and a timepicker widget that can return the time in 24 hour time
@@ -18,11 +19,11 @@ class LabelDateTime(tk.Frame):
         parent.rowconfigure(row, pad=padx)
         parent.rowconfigure(row+1, pad=padx)
 
-    # Returns the date in the entry
+    # Returns the date and time in the entry
     def get_entry(self):
-        return [self.date_entry.get_entry(), self.time_entry.get_entry()]
+        return {'date': self.date_entry.get_entry(), 'time': self.time_entry.get_entry()}
 
-    # Sets the date in the entry according to a time_list defined as [hours12, minutes, period]
-    def set_entry(self, date_list: list, time_list: list):
-        self.date_entry.set_entry(date_list)
-        self.time_entry.set_entry(time_list)
+    # Sets the date and time in the entry according to a datetime.date and a datetime.time
+    def set_entry(self, date: datetime.date, time: datetime.time):
+        self.date_entry.set_entry(date)
+        self.time_entry.set_entry(time)

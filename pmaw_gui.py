@@ -1,4 +1,6 @@
 import tkinter as tk
+import comment_gui
+from tkinter import ttk
 
 
 
@@ -10,9 +12,14 @@ class PmawGUI():
         self.root.rowconfigure(0, weight=100)
         self.root.resizable(False, False)
 
-        self.frame_main = tk.Frame(self.root, padx=20)
-        self.frame_main.grid(sticky='news')
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.grid(sticky='news')
 
+        self.comment_page = comment_gui.CommentGUI(self.notebook, self.root)
 
+        self.notebook.add(self.comment_page, text='Comments')
 
         self.root.mainloop()
+
+
+gui = PmawGUI()

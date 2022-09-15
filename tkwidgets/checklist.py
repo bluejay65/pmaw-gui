@@ -1,40 +1,35 @@
 import tkinter as tk
+from tkinter import ttk
+import tkwidgets as tkw
 
 
 # A list of checkbuttons that can be selected and deselected by code or user
-class Checklist(tk.Frame):
+class Checklist(ttk.Labelframe):
 
     # Creates the checkbuttons from listvariable and adds them to the frame
-    def __init__(self, parent, listvariable: list, scrollbar: bool = False, **kwargs):
-        tk.Frame.__init__(self, parent, **kwargs)
+    def __init__(self, parent, listvariable: list, title: str = None, scrollbar: bool = False, **kwargs):
+        ttk.Labelframe.__init__(self, parent, text=title, **kwargs)
 
-        self.canvas = tk.Canvas(self)
-        self.frame = tk.Frame(self.canvas)
+        if scrollbar:
+            self.frame = tkw.VerticalScrolledFrame(self)
+            self.edit_frame = self.frame.interior
+        else:
+            self.frame = self.edit_frame = tk.Frame(self)
 
+        self.frame.grid(row=0, column=0)
         self.vars = []
         self.checkbuttons = []
-        bg = self.cget("background")
 
         for choice in listvariable:
             var = tk.StringVar(value=choice)
             self.vars.append(var)
-            cb = tk.Checkbutton(self.frame, var=var, text=choice,
-                                onvalue=choice, offvalue="",
-                                anchor="w", width=20, background=bg,
-                                relief="flat", highlightthickness=0
-            )
+
+            cb = tk.Checkbutton(self.edit_frame, var=var, text=choice, onvalue=choice, offvalue="", anchor="w")
+
             cb.grid(row=len(self.checkbuttons), column=0, sticky='w')
             self.checkbuttons.append(cb)
 
-        if scrollbar:
-            self.scrollbar = tk.Scrollbar(self, orient='vertical', command=self.canvas.yview)
-            self.canvas.configure(yscrollcommand=self.scrollbar.set)
-
-            self.scrollbar.pack(side='right', fill='y')
-            self.frame.bind("<Configure>", self.onFrameConfigure)
-
-        self.canvas.pack(side='left', fill='both', expand=True)
-        self.canvas.create_window((0,0), window=self.frame, anchor='nw')
+        
 
 
     # Returns a list of the values of the checked buttons

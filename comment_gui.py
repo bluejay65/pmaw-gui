@@ -1,128 +1,133 @@
-#import base_gui
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import filedialog
 from tkwidgets import LabelEntryList, Checklist, EntryType
+from search_pmaw import CallPmaw
+from base_gui import BaseGUI
 
 
-class CommentGUI(tk.Frame):#base_gui.BaseGUI):
+class CommentGUI(BaseGUI):
 
     search_fields = {
-                    'Search term': EntryType.ENTRY, 
-                    'Max results': EntryType.ENTRY, 
-                    'Author': EntryType.ENTRY, 
+                    'Search term': EntryType.ENTRY,
+                    'Max results': EntryType.ENTRY,
+                    'Author': EntryType.ENTRY,
                     'Subreddit': EntryType.ENTRY,
                     'Posted after': EntryType.DATETIME,
                     'Posted before': EntryType.DATETIME
     }
 
+    api_fields = {
+                    'Search term': 'q',
+                    'Max results': 'limit',
+                    'Author': 'author',
+                    'Subreddit': 'subreddit',
+                    'Posted after': 'after',
+                    'Posted before': 'before'
+    }
+
     return_fields = [
-                    'all_awardings',
-                    'archived',
-                    'author',
-                    'author_fullname',
-                    'body',
-                    'comment_type',
-                    'controversiality',
-                    'created_utc',
-                    'gilded',
-                    'id',
-                    'link_id',
-                    'locked',
-                    'parent_id',
-                    'permalink',
-                    'retrieved_utc',
-                    'score',
-                    'score_hidden',
-                    'send_replies',
-                    'stickied',
-                    'subreddit',
-                    'subreddit_id',
-                    'subreddit_name_prefixed',
-                    'subreddit_type',
-                    'total_awards_received',
-                    'treatment_tags'
+                    'all_awardings',            # 0
+                    'archived',                 # 1
+                    'author',                   # 2
+                    'author_fullname',          # 3
+                    'body',                     # 4
+                    'comment_type',             # 5
+                    'controversiality',         # 6
+                    'created_utc',              # 7
+                    'gilded',                   # 8 
+                    'id',                       # 9
+                    'link_id',                  # 10
+                    'locked',                   # 11
+                    'parent_id',                # 12
+                    'permalink',                # 13
+                    'retrieved_utc',            # 14
+                    'score',                    # 15
+                    'score_hidden',             # 16
+                    'send_replies',             # 17
+                    'stickied',                 # 18
+                    'subreddit',                # 19
+                    'subreddit_id',             # 20
+                    'subreddit_name_prefixed',  # 21
+                    'subreddit_type',           # 22 
+                    'total_awards_received',    # 23
+                    'treatment_tags'            # 24
     ]
 
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, root, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
-
-        print(self.return_fields)
+        self.root = root
 
         self.label_entries = LabelEntryList(self, self.search_fields)
-        self.label_entries.grid(row=0, column=0, sticky='nw')
+        self.label_entries.grid(row=0, column=0)
 
         self.label_entries.set_entry('Max results', 500)
 
-        self.return_entries_label = tk.Label(self, text='Data to Return')
-        self.return_entries = Checklist(self, self.return_fields, True)
+        self.return_entries = Checklist(self, self.return_fields, title='Data to Return', scrollbar=True)
 
-        self.return_entries_label.grid(row=0, column=1)
-        self.return_entries.grid(row=0, column=2)
+        self.return_entries.grid(row=0, column=1)
+        self.reset_return_fields()
+
+        self.file_selected = ''
+        self.button_frame = tk.Frame(self)
+        self.button_frame.grid(row=1, column=0, columnspan=2)
+        self.button_frame.columnconfigure(0, pad=20)
+        self.button_frame.columnconfigure(1, pad=20)
+
+        self.run_button = tk.Button(self.button_frame, text='Run', command=self.run)
+        self.file_button = tk.Button(self.button_frame, text='Select File', command=self.select_file)
+        self.file_button.grid(row=0, column=0, columnspan=2)
+
+        self.rowconfigure(0, pad=10)
+        self.rowconfigure(1, pad=10)
+        self.columnconfigure(0, pad=20)
+        self.columnconfigure(0, pad=20)
+
+        self.pmaw = CallPmaw()
 
 
 
 
-    def start_data(self):
+    def run(self):
+        data_dict = self.get_data()
+        self.root.withdraw()
+        self.pmaw.save_csv(data_dict, self.file_selected)
+        self.root.deiconify()
+
+    
+    def select_file(self):
+        self.file_selected = filedialog.asksaveasfilename()
+
+        if self.file_selected:
+            self.run_button.grid(row=0, column=0)
+            self.file_button.grid(row=0, column=1)
+        else:
+            self.run_button.grid_forget()
+            self.file_button.grid(row=0, column=0)
+
+
+    def reset_return_fields(self):
+        self.return_entries.check_items([2, 4, 6, 7, 15, 19])
+
+    def get_data(self):
         data_dict = {}
 
-        data_dict['q'] = self.q_strvar.get()
-        if data_dict['q'] == '':
-            data_dict['q'] = None
+        for key in self.search_fields.keys():
+            data_dict[self.api_fields[key]] = self.label_entries.get_entry(key)
 
-        data_dict['limit'] = int(self.limit_strvar.get())
+            if data_dict[self.api_fields[key]] == '':
+                data_dict[self.api_fields[key]] = None
+                
+        data_dict['limit'] = int(data_dict['limit'])
+        data_dict['fields'] = self.return_entries.get_checked_items()
 
-        data_dict['fields'] = self.fields_checklist.get_checked_items()
-        if len(data_dict['fields']) <= 0:
-            data_dict['fields'] = None
-
-        data_dict['author'] = self.author_strvar.get()
-        if data_dict['author'] == '':
-            data_dict['author'] = None
-
-        data_dict['subreddit'] = self.subreddit_strvar.get()
-        if data_dict['subreddit'] == '':
-            data_dict['subreddit'] = None
-
-        if self.after_date_strvar.get() == '':
+        if data_dict['after']['date']:
+            data_dict['after'] = self.date_time_to_epoch(data_dict['after']['date'], data_dict['after']['time'])
+        else:
             data_dict['after'] = None
+            
+        if data_dict['before']['date']:
+            data_dict['before'] = self.date_time_to_epoch(data_dict['before']['date'], data_dict['before']['time'])
         else:
-            try:
-                data_dict['after'] = self.date_to_epoch(self.after_date_strvar.get()) + self.time_to_epoch(self.after_time_picker.time())
-            except:
-                self.raise_error('The date must be formatted using D/M/YYYY or D-M-YYYY', 'Date Entry Error')
-                return
-
-        if self.before_date_strvar.get() == '':
             data_dict['before'] = None
-        else:
-            try:
-                data_dict['before'] = self.date_to_epoch(self.before_date_strvar.get()) + self.time_to_epoch(self.before_time_picker.time())
-            except:
-                self.raise_error('The date must be formatted using D/M/YYYY or D-M-YYYY', 'Date Entry Error')
-                return
 
-        if self.file_str != '':
-            data_dict['file'] = self.file_str
-        else:
-            self.raise_error('You must select a file before running the search', 'File Select Error')
-            return
-
-        if data_dict['q'] == None and data_dict['author'] == None and data_dict['subreddit'] == None:
-            if not messagebox.askokcancel(message='Data collection is unpredictable if no search term, subreddit, or author is defined', title='Data Warning'):
-                return
-
-        self.process_data(data_dict)
-
-
-    def reset_fields(self):
-        self.fields_checklist.check_items([0, 5, 6, 7, 15, 17])
-
-
-root = tk.Tk()
-frame_main = tk.Frame(root, padx=20)
-frame_main.grid(sticky='news')
-
-comments = CommentGUI(frame_main)
-comments.grid(row=0, column=0)
-
-root.mainloop()
+        return data_dict

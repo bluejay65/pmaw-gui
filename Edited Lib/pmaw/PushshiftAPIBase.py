@@ -244,7 +244,7 @@ class PushshiftAPIBase:
         else:
             endpoint = f'{dataset}/{kind}/search'
 
-        if kind == 'comment' and ('q' not in kwargs or kwargs['q'] == None) and ('subreddit' not in kwargs or kwargs['author'] == None) and ('author' not in kwargs or kwargs['author'] == None):
+        if kind == 'comment' and ('q' not in kwargs or not kwargs['q']) and ('subreddit' not in kwargs or not kwargs['subreddit']) and ('author' not in kwargs or not kwargs['author']):
             should_check_total = False
         else:
             should_check_total = True

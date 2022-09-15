@@ -23,8 +23,8 @@ class LabelDate(tk.Frame):
         return self.date_entry.get_entry()
 
     # Sets the date in the entry
-    def set_entry(self, date_list: list):
-        self.date_entry.set_entry(date_list)
+    def set_entry(self, date: datetime.date):
+        self.date_entry.set_entry(date)
 
 
 
@@ -96,24 +96,26 @@ class DateEntry(tk.Frame):
             return 29
         return 28
 
-    # Returns the date in a list defined as [month, day, year]
+    # Returns the date in a datetime.date
     def get_entry(self):
-        return_date = [0, 0, 0]
-
+        if self.year_str.get() != '':
+            year = int(self.year_str.get())
+        else:
+            return
         if self.month_str.get() != '':
             datetime_month = datetime.datetime.strptime(self.month_str.get(), '%B')
-            return_date[0] = datetime_month.month
-
+            month = datetime_month.month
+        else:
+            return
         if self.day_str.get() != '':
-            return_date[1] = int(self.day_str.get())
+            day = int(self.day_str.get())
+        else:
+            return
 
-        if self.year_str.get() != '':
-            return_date[2] = int(self.year_str.get())
+        return datetime.date(year, month, day)
 
-        return return_date
-
-    # Sets the date based on date_list defined as [month, day, year]
-    def set_entry(self, date_list: list):
-        self.month_str['value'] = date_list[0]
-        self.day_str['value'] = date_list[1]
-        self.year_str['value'] = date_list[2]
+    # Sets the date based on a datetime.date
+    def set_entry(self, date: datetime.date):
+        self.year_str['value'] = date.year
+        self.month_str['value'] = date.month
+        self.day_str['value'] = date.day

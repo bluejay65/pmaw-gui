@@ -1,5 +1,6 @@
 import tkinter as tk
 from tktimepicker import SpinTimePickerModern, constants
+import datetime
 
 
 
@@ -16,13 +17,13 @@ class LabelTime(tk.Frame):
 
         parent.rowconfigure(row, pad=padx)
 
-    # Returns the date in the entry
+    # Returns the time in the entry as a datetime.time
     def get_entry(self):
         return self.time_entry.get_entry()
 
-    # Sets the date in the entry according to a time_list defined as [hours12, minutes, period]
-    def set_entry(self, time_list: list):
-        self.time_entry.set_entry()
+    # Sets the time in the entry according to a datetime.time
+    def set_entry(self, time: datetime.time):
+        self.time_entry.set_entry(time)
 
 
 
@@ -33,19 +34,35 @@ class TimeEntry(tk.Frame):
 
         self.time_entry = SpinTimePickerModern(self)
         self.time_entry.addAll(constants.HOURS12)
-        self.time_entry.configureAll(bg="#dddddd", width=4, hoverbg="#aaaaaa", clickedbg="#000000", clickedcolor="#ffffff")
-        self.time_entry.configure_separator(bg="#dddddd")
+        self.time_entry.configureAll(bg="#cdcdcd", width=4, hoverbg="#a6a6a6", clickedbg="#606060", clickedcolor="#ffffff")
+        self.time_entry.configure_separator(bg="#cdcdcd")
         self.time_entry.setMins(0)
 
         self.time_entry.grid(row=0, column=0)
 
 
-    # Returns the date in the entry
+    # Returns the time in the entry as a datetime.time
     def get_entry(self):
-        return self.time_entry.time()
+        time = self.time_entry.time()
+        temp_time = [time[0], time[1], time[2]]
+        if temp_time[2] == 'PM':
+            temp_time[0] += 12
+        elif temp_time[0] == 12:
+            temp_time[0] = 0
 
-    # Sets the date in the entry according to a time_list defined as [hours12, minutes, period]
-    def set_entry(self, time_list: list):
-        self.time_entry.set12Hrs(time_list[0])
-        self.time_entry.setMins(time_list[1])
-        self.time_entry.setPeriod(time_list[2])
+        return datetime.time(temp_time[0], temp_time[1])
+
+    # Sets the date in the entry according to a datetime.time
+    def set_entry(self, time: datetime.time):
+        if time.hour >= 12:
+            self.time_entry.setPeriod(constants.PM)
+            self.time_entry.set12Hrs(time.hour-12)
+        else:
+            self.time_entry.setPeriod(constants.AM)
+            if time.hour == 0:
+                self.time_entry.set12Hrs(12)
+            else:
+                self.time_entry.set12Hrs(time.hour)
+            
+            self.time_entry.setMins(time.minute)
+        
