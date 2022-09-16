@@ -16,10 +16,10 @@ class PmawGUI():
         self.notebook.grid(sticky='news')
 
         self.comment_page = comment_gui.CommentGUI(self.notebook, self.root)
-        self.notebook.add(self.comment_page, text='Comments')
+        self.notebook.add(self.comment_page, text='Comments', sticky='news')
 
         self.data_page = data_gui.DataGUI(self.notebook, self.root)
-        self.notebook.add(self.data_page, text='Data')
+        self.notebook.add(self.data_page, text='Data Analysis', sticky='news')
 
         self.root.mainloop()
 

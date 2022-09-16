@@ -1,7 +1,4 @@
-from search_pmaw import CallPmaw
 import pandas as pd
-from pmaw import PushshiftAPI
-import numpy as np
 
 
 class Data():
@@ -9,19 +6,34 @@ class Data():
         self.df = df
         self.group_dict = {}
 
-        print(df)
-
     def sum_fields(self, fields: list):
         fields_tuple = tuple(fields)
         if fields_tuple not in self.group_dict:
             self.group_dict[fields_tuple] = self.df.groupby(fields, sort=False)
-        return self.group_dict[fields_tuple].sum()
+        sum_df = self.group_dict[fields_tuple].sum()
+
+        headers = []
+        for i in range(len(sum_df.columns)):
+            headers.append ('total ' + sum_df.columns[i])
+        sum_df.columns = headers
+        return sum_df
+
+    def save_sum_fields_csv(self, fields: list, file):
+        self.sum_fields(fields).to_csv(file)
+        print('Aggregate Sum saved to ' + file)
+
 
     def count_fields(self, fields: list):
         fields_tuple = tuple(fields)
         if fields_tuple not in self.group_dict:
             self.group_dict[fields_tuple] = self.df.groupby(fields, sort=False)
-        return self.group_dict[fields_tuple].count()
+        count_df = self.group_dict[fields_tuple].count().iloc[:, 0:len(fields)]
+        count_df.columns = ['frequency']
+        return count_df
+
+    def save_count_fields_csv(self, fields: list, file):
+        self.count_fields(fields).to_csv(file)
+        print('Frequency saved to ' + file)
 
 
 """
@@ -35,6 +47,6 @@ test_df = pd.DataFrame([['user1', 4, 5],
 
 data = Data(test_df)
 
-print(data.sum_field('author'))
-print(data.count_field('author'))
+print(data.sum_fields('author'))
+print(data.count_fields('author'))
 """

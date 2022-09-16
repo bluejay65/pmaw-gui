@@ -77,7 +77,13 @@ class CommentGUI(BaseGUI):
 
 
     def reset_return_fields(self):
-        self.return_entries.check_items([2, 4, 6, 7, 15, 19])
+        self.return_entries.check_items([
+                                        'author',
+                                        'body',
+                                        'created_utc',
+                                        'score',
+                                        'subreddit'
+                                        ])
 
 
     def get_entries(self):
