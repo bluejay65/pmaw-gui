@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import messagebox
 from tkwidgets import LabelEntryList, Checklist, EntryType
 from search_pmaw import CallPmaw
 from base_gui import BaseGUI
@@ -60,6 +61,9 @@ class CommentGUI(BaseGUI):
 
     def run(self):
         entry_dict = self.get_entries()
+        if entry_dict['q'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
+            if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
+                return
         self.root.withdraw()
         CallPmaw.save_csv(entry_dict, self.file_selected)
         self.root.deiconify()
