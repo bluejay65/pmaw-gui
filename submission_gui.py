@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import Entry, filedialog
 from tkinter import messagebox
 from tkwidgets import LabelEntryList, Checklist, EntryType
 from search_pmaw import CallPmaw
@@ -7,22 +7,48 @@ from base_gui import BaseGUI
 import constants
 
 
-class CommentGUI(BaseGUI):
+class SubmissionGUI(BaseGUI):
 
     search_fields = {
                     'Search term': EntryType.ENTRY,
+                    'Exclude Search Term': EntryType.ENTRY,
+                    'Search Title': EntryType.ENTRY,
+                    'Exclude Title Text': EntryType.ENTRY,
+                    'Search Body': EntryType.ENTRY,
+                    'Exclude Body Text': EntryType.ENTRY,
                     'Max results': EntryType.ENTRY,
                     'Author': EntryType.ENTRY,
                     'Subreddit': EntryType.ENTRY,
+                    'Score': EntryType.RANGE,
+                    'Number of Comments': EntryType.RANGE,
+                    ('NSFW Submissions', 'No Filter', 'NSFW Only', 'SFW Only'): EntryType.DROPDOWN,
+                    ('Video Submissions', 'No Filter', 'Video Only', 'Exclude Videos'): EntryType.DROPDOWN,
+                    ('Locked Comments', 'No Filter', 'Locked Only', 'Unlocked Only'): EntryType.DROPDOWN,
+                    ('Stickied Submission', 'No Filter', 'Stickied Only', 'Exlude Stickied'): EntryType.DROPDOWN,
+                    ('Spoliers', 'No Filter', 'Spoliers Only', 'Exclude Spoilers'): EntryType.DROPDOWN,
+                    ('Using Contest Mode', 'No Filter', 'Contest Mode Only', 'Exclude Contest Mode'): EntryType.DROPDOWN,
                     'Posted after': EntryType.DATETIME,
                     'Posted before': EntryType.DATETIME
     }
 
     api_fields = {
                     'Search term': 'q',
+                    'Exclude Search Term': 'q:not',
+                    'Search Title': 'title',
+                    'Exclude Title Text': 'title:not',
+                    'Search Body': 'selftext',
+                    'Exlude Body Text': 'selftext:not',
                     'Max results': 'limit',
                     'Author': 'author',
                     'Subreddit': 'subreddit',
+                    'Score': 'score',
+                    'Number of Comments': 'num_comments',
+                    ('NSFW Submissions', 'No Filter', 'NSFW Only', 'SFW Only'): 'over_18',
+                    ('Video Submissions', 'No Filter', 'Video Only', 'Exclude Videos'): 'is_video',
+                    ('Locked Comments', 'No Filter', 'Locked Only', 'Unlocked Only'): 'locked',
+                    ('Stickied Submission', 'No Filter', 'Stickied Only', 'Exlude Stickied'): 'stickied',
+                    ('Spoliers', 'No Filter', 'Spoliers Only', 'Exclude Spoilers'): 'spoiler',
+                    ('Using Contest Mode', 'No Filter', 'Contest Mode Only', 'Exclude Contest Mode'): 'contest_mode',
                     'Posted after': 'after',
                     'Posted before': 'before'
     }
@@ -36,7 +62,7 @@ class CommentGUI(BaseGUI):
 
         self.label_entries.set_entry('Max results', 500)
 
-        self.return_entries = Checklist(self, constants.return_fields, title='Data to Return', scrollbar=True)
+        self.return_entries = Checklist(self, constants.return_fields, title='Data to Return', scrollbar=False)
 
         self.return_entries.grid(row=0, column=1)
         self.reset_return_fields()
@@ -99,7 +125,7 @@ class CommentGUI(BaseGUI):
             if entry_dict[self.api_fields[key]] == '':
                 entry_dict[self.api_fields[key]] = None
 
-        entry_dict['limit'] = int(entry_dict['limit']) #TODO Nonetype isn't working if nothing is entered
+        entry_dict['limit'] = int(entry_dict['limit'])
         entry_dict['fields'] = self.return_entries.get_checked_items()
 
         if entry_dict['after']['date']:

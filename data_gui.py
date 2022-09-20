@@ -7,7 +7,7 @@ from search_pmaw import CallPmaw
 import pandas as pd
 
 
-class DataGUI(BaseGUI):
+class DataGUI(BaseGUI): #TODO get way to count total comments returned
 
     def __init__(self, parent, root, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
