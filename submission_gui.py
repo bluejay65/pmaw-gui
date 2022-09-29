@@ -4,7 +4,18 @@ from tkinter import messagebox
 from tkwidgets import LabelEntryList, Checklist, EntryType
 from search_pmaw import CallPmaw
 from base_gui import BaseGUI
+from enum import Enum
 import constants
+
+
+class Dropdowns(Enum):
+    NSFW = ('NSFW Submissions', 'No Filter', 'NSFW Only', 'SFW Only')
+    VIDEO = ('Video Submissions', 'No Filter', 'Video Only', 'Exclude Videos')
+    LOCKED = ('Locked Comments', 'No Filter', 'Locked Only', 'Unlocked Only')
+    STICKIED = ('Stickied Submission', 'No Filter', 'Stickied Only', 'Exlude Stickied')
+    SPOILERS = ('Spoliers', 'No Filter', 'Spoliers Only', 'Exclude Spoilers')
+    CONTEST = ('Using Contest Mode', 'No Filter', 'Contest Mode Only', 'Exclude Contest Mode')
+
 
 
 class SubmissionGUI(BaseGUI):
@@ -37,18 +48,18 @@ class SubmissionGUI(BaseGUI):
                     'Search Title': 'title',
                     'Exclude Title Text': 'title:not',
                     'Search Body': 'selftext',
-                    'Exlude Body Text': 'selftext:not',
+                    'Exclude Body Text': 'selftext:not',
                     'Max results': 'limit',
                     'Author': 'author',
                     'Subreddit': 'subreddit',
                     'Score': 'score',
                     'Number of Comments': 'num_comments',
-                    ('NSFW Submissions', 'No Filter', 'NSFW Only', 'SFW Only'): 'over_18',
-                    ('Video Submissions', 'No Filter', 'Video Only', 'Exclude Videos'): 'is_video',
-                    ('Locked Comments', 'No Filter', 'Locked Only', 'Unlocked Only'): 'locked',
-                    ('Stickied Submission', 'No Filter', 'Stickied Only', 'Exlude Stickied'): 'stickied',
-                    ('Spoliers', 'No Filter', 'Spoliers Only', 'Exclude Spoilers'): 'spoiler',
-                    ('Using Contest Mode', 'No Filter', 'Contest Mode Only', 'Exclude Contest Mode'): 'contest_mode',
+                    'NSFW Submissions': 'over_18',
+                    'Video Submissions': 'is_video',
+                    'Locked Comments': 'locked',
+                    'Stickied Submission': 'stickied',
+                    'Spoliers': 'spoiler',
+                    'Using Contest Mode': 'contest_mode',
                     'Posted after': 'after',
                     'Posted before': 'before'
     }
@@ -62,7 +73,7 @@ class SubmissionGUI(BaseGUI):
 
         self.label_entries.set_entry('Max results', 500)
 
-        self.return_entries = Checklist(self, constants.return_fields, title='Data to Return', scrollbar=False)
+        self.return_entries = Checklist(self, constants.submission_return_fields, title='Data to Return', scrollbar=True, height=759)
 
         self.return_entries.grid(row=0, column=1)
         self.reset_return_fields()
@@ -80,7 +91,7 @@ class SubmissionGUI(BaseGUI):
         self.rowconfigure(0, pad=10)
         self.rowconfigure(1, pad=10)
         self.columnconfigure(0, pad=20)
-        self.columnconfigure(0, pad=20)
+        self.columnconfigure(1, pad=20)
 
 
 
@@ -91,7 +102,7 @@ class SubmissionGUI(BaseGUI):
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
         self.root.withdraw()
-        CallPmaw.save_csv(entry_dict, self.file_selected)
+        CallPmaw.save_submission_csv(entry_dict, self.file_selected)
         self.root.deiconify()
 
     
@@ -120,10 +131,21 @@ class SubmissionGUI(BaseGUI):
         entry_dict = {}
 
         for key in self.search_fields.keys():
-            entry_dict[self.api_fields[key]] = self.label_entries.get_entry(key)
+            if type(key) is tuple:
+                entry_dict[self.api_fields[key[0]]] = self.label_entries.get_entry(key[0])
 
-            if entry_dict[self.api_fields[key]] == '':
-                entry_dict[self.api_fields[key]] = None
+                if entry_dict[self.api_fields[key[0]]] == '' or entry_dict[self.api_fields[key[0]]] == key[1]:
+                    entry_dict[self.api_fields[key[0]]] = None
+                elif entry_dict[self.api_fields[key[0]]] == key[2]:
+                    entry_dict[self.api_fields[key[0]]] = 'true'
+                elif entry_dict[self.api_fields[key[0]]] == key[3]:
+                    entry_dict[self.api_fields[key[0]]] = 'false'
+
+            else:
+                entry_dict[self.api_fields[key]] = self.label_entries.get_entry(key)
+
+                if entry_dict[self.api_fields[key]] == '':
+                    entry_dict[self.api_fields[key]] = None
 
         entry_dict['limit'] = int(entry_dict['limit'])
         entry_dict['fields'] = self.return_entries.get_checked_items()
@@ -136,6 +158,6 @@ class SubmissionGUI(BaseGUI):
         if entry_dict['before']['date']:
             entry_dict['before'] = self.date_time_to_epoch(entry_dict['before']['date'], entry_dict['before']['time'])
         else:
-            entry_dict['before'] = None
+            entry_dict['before'] = None  
 
         return entry_dict

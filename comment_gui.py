@@ -36,7 +36,7 @@ class CommentGUI(BaseGUI):
 
         self.label_entries.set_entry('Max results', 500)
 
-        self.return_entries = Checklist(self, constants.return_fields, title='Data to Return', scrollbar=True)
+        self.return_entries = Checklist(self, constants.comment_return_fields, title='Data to Return', scrollbar=True)
 
         self.return_entries.grid(row=0, column=1)
         self.reset_return_fields()
@@ -65,7 +65,7 @@ class CommentGUI(BaseGUI):
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
         self.root.withdraw()
-        CallPmaw.save_csv(entry_dict, self.file_selected)
+        CallPmaw.save_comment_csv(entry_dict, self.file_selected)
         self.root.deiconify()
 
     

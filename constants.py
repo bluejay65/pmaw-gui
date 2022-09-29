@@ -1,27 +1,69 @@
-return_fields = [
-                    'all_awardings',            # 0
-                    'archived',                 # 1
-                    'author',                   # 2
-                    'author_fullname',          # 3
-                    'body',                     # 4
-                    'comment_type',             # 5
-                    'controversiality',         # 6
-                    'created_utc',              # 7
-                    'gilded',                   # 8 
-                    'id',                       # 9
-                    'link_id',                  # 10
-                    'locked',                   # 11
-                    'parent_id',                # 12
-                    'permalink',                # 13
-                    'retrieved_utc',            # 14
-                    'score',                    # 15
-                    'score_hidden',             # 16
-                    'send_replies',             # 17
-                    'stickied',                 # 18
-                    'subreddit',                # 19
-                    'subreddit_id',             # 20
-                    'subreddit_name_prefixed',  # 21
-                    'subreddit_type',           # 22 
-                    'total_awards_received',    # 23
-                    'treatment_tags'            # 24
+comment_return_fields = [
+                    'all_awardings',
+                    'archived',
+                    'author',
+                    'author_flair_text',
+                    'body',
+                    'comment_type',
+                    'controversiality',
+                    'created_utc',
+                    'gilded',
+                    'id',
+                    'link_id',
+                    'locked',
+                    'parent_id',
+                    'permalink',
+                    'retrieved_utc',
+                    'score',
+                    'score_hidden',
+                    'send_replies',
+                    'stickied',
+                    'subreddit',
+                    'subreddit_id',
+                    'subreddit_name_prefixed',
+                    'subreddit_type',
+                    'total_awards_received',
+                    'treatment_tags'
+    ]
+
+submission_return_fields = [
+                    'all_awardings',
+                    'allow_live_comments',
+                    'author',
+                    'author_flair_text',
+                    'author_is_blocked',
+                    'awarders',
+                    'can_mod_post',
+                    'contest_mode',
+                    'created_utc',
+                    'full_link',
+                    'is_crosspostable',
+                    'is_meta',
+                    'is_original_content',
+                    'is_reddit_media_domain',
+                    'is_robot_indexable',
+                    'is_self',
+                    'is_video',
+                    'link_flair_text',
+                    'locked',
+                    'media_only',
+                    'num_comments',
+                    'num_crossposts',
+                    'over_18',
+                    'permalink'
+                    'pinned',
+                    'retrieved_on',
+                    'score',
+                    'selftext',
+                    'send_replies',
+                    'spoiler',
+                    'stickied',
+                    'subreddit',
+                    'subreddit_id',
+                    'subreddit_subscribers',
+                    'subreddit_type',
+                    'title',
+                    'total_awards_received',
+                    'treatment_tags',
+                    'upvote_ratio'
     ]
