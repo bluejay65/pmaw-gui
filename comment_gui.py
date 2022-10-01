@@ -1,30 +1,32 @@
+import sys
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
-from tkwidgets import LabelEntryList, Checklist, EntryType
+from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
 from search_pmaw import CallPmaw
 from base_gui import BaseGUI
+from constants import FileType
 import constants
 
 
 class CommentGUI(BaseGUI):
 
     search_fields = {
-                    'Search term': EntryType.ENTRY,
-                    'Max results': EntryType.ENTRY,
+                    'Search Term': EntryType.ENTRY,
+                    'Max Results': EntryType.ENTRY,
                     'Author': EntryType.ENTRY,
                     'Subreddit': EntryType.ENTRY,
-                    'Posted after': EntryType.DATETIME,
-                    'Posted before': EntryType.DATETIME
+                    'Posted After': EntryType.DATETIME,
+                    'Posted Before': EntryType.DATETIME
     }
 
     api_fields = {
-                    'Search term': 'q',
-                    'Max results': 'limit',
+                    'Search Term': 'q',
+                    'Max Results': 'limit',
                     'Author': 'author',
                     'Subreddit': 'subreddit',
-                    'Posted after': 'after',
-                    'Posted before': 'before'
+                    'Posted After': 'after',
+                    'Posted Before': 'before'
     }
 
     def __init__(self, parent, root, **kwargs):
@@ -32,18 +34,19 @@ class CommentGUI(BaseGUI):
         self.root = root
 
         self.label_entries = LabelEntryList(self, self.search_fields)
-        self.label_entries.grid(row=0, column=0)
+        self.label_entries.grid(row=0, column=0, rowspan=2)
 
-        self.label_entries.set_entry('Max results', 500)
-
-        self.return_entries = Checklist(self, constants.comment_return_fields, title='Data to Return', scrollbar=True)
+        self.return_entries = Checklist(self, constants.comment_return_fields, title='Data to Return', height = 200, scrollbar=True)
 
         self.return_entries.grid(row=0, column=1)
         self.reset_return_fields()
 
+        self.file_type_button = Radiolist(self, options=[e.value for e in FileType], title='Save as File Type')
+        self.file_type_button.grid(row=1, column=1)
+
         self.file_selected = ''
         self.button_frame = tk.Frame(self)
-        self.button_frame.grid(row=1, column=0, columnspan=2)
+        self.button_frame.grid(row=2, column=0, columnspan=2)
         self.button_frame.columnconfigure(0, pad=20)
         self.button_frame.columnconfigure(1, pad=20)
 
@@ -53,8 +56,9 @@ class CommentGUI(BaseGUI):
 
         self.rowconfigure(0, pad=10)
         self.rowconfigure(1, pad=10)
+        self.rowconfigure(2, pad=10)
         self.columnconfigure(0, pad=20)
-        self.columnconfigure(0, pad=20)
+        self.columnconfigure(1, pad=20)
 
 
 
@@ -65,7 +69,7 @@ class CommentGUI(BaseGUI):
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
         self.root.withdraw()
-        CallPmaw.save_comment_csv(entry_dict, self.file_selected)
+        CallPmaw.save_comment_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice())
         self.root.deiconify()
 
     
@@ -99,7 +103,11 @@ class CommentGUI(BaseGUI):
             if entry_dict[self.api_fields[key]] == '':
                 entry_dict[self.api_fields[key]] = None
 
-        entry_dict['limit'] = int(entry_dict['limit']) #TODO Nonetype isn't working if nothing is entered
+        if entry_dict['limit']:
+            entry_dict['limit'] = int(entry_dict['limit']) #TODO Nonetype isn't working if nothing is entered
+        else:
+            entry_dict['limit'] = sys.maxsize
+
         entry_dict['fields'] = self.return_entries.get_checked_items()
 
         if entry_dict['after']['date']:

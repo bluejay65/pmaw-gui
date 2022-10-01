@@ -1,3 +1,9 @@
+from enum import Enum
+
+class FileType(Enum):
+    CSV = '.csv'
+    XLSX = '.xlsx'
+
 comment_return_fields = [
                     'all_awardings',
                     'archived',

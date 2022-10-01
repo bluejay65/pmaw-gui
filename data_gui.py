@@ -1,8 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from tkwidgets import Checklist
+from tkwidgets import Checklist, Radiolist
 from base_gui import BaseGUI
-import constants, pmaw_data
+from constants import FileType
+import pmaw_data
 from search_pmaw import CallPmaw
 import pandas as pd
 
@@ -16,19 +17,25 @@ class DataGUI(BaseGUI): #TODO get way to count total comments returned
         self.frequency_file = ''
         self.frequency_entries = Checklist(self, [], title='Get frequency grouped by', scrollbar=True, command='check_checklists')
         self.frequency_file_button = tk.Button(self, text='Select File to Save to', command=lambda: self.save_file(self.frequency_file, self.frequency_file_button))
+        self.frequency_file_type_button = Radiolist(self, options=[e.value for e in FileType], title='Save As')
         self.frequency_entries.grid(row=0, column=0)
         self.frequency_entries.grid_remove()
         self.frequency_file_button.grid(row=1, column=0)
         self.frequency_file_button.grid_remove()
+        self.frequency_file_type_button.grid(row=2, column=0)
+        self.frequency_file_type_button.grid_remove()
         
 
         self.agg_sum_file = ''
         self.agg_sum_entries = Checklist(self, [], title='Get aggregate sum grouped by', scrollbar=True, command='check_checklists')
         self.agg_sum_file_button = tk.Button(self, text='Select File to Save to', command=lambda: self.save_file(self.agg_sum_file, self.agg_sum_file_button))
+        self.agg_sum_file_type_button = Radiolist(self, options=[e.value for e in FileType], title='Save As')
         self.agg_sum_entries.grid(row=0, column=1)
         self.agg_sum_entries.grid_remove()
         self.agg_sum_file_button.grid(row=1, column=1)
         self.agg_sum_file_button.grid_remove()
+        self.agg_sum_file_type_button.grid(row=2, column=1)
+        self.agg_sum_file_type_button.grid_remove()
 
         self.clear_entries()
 
@@ -39,15 +46,12 @@ class DataGUI(BaseGUI): #TODO get way to count total comments returned
         self.data_button_frame.columnconfigure(0, pad=20)
         self.data_button_frame.columnconfigure(1, pad=20)
 
-
         self.datafile_button = tk.Button(self, text='Select Data File to Use', command=lambda: self.open_file())
         self.datafile_button.grid(row=2, column=0, columnspan=2)
-
 
         self.run_button = tk.Button(self, text='Run', command=self.run)
         self.run_button.grid(row=3, column=0, columnspan=2)
         self.run_button.grid_remove()
-
 
         self.rowconfigure(0, pad=10)
         self.rowconfigure(1, pad=10)
@@ -57,20 +61,21 @@ class DataGUI(BaseGUI): #TODO get way to count total comments returned
         self.columnconfigure(0, pad=20)
 
 
-
-
     def run(self):
         entry_dict = self.get_entries()
 
         self.root.withdraw()
 
-        df = pd.read_csv(self.datafile, sep=',', usecols=CallPmaw.get_csv_cols(self.datafile))
+        if self.datafile.endswith('.csv'):
+            df = pd.read_csv(self.datafile, sep=',', usecols=CallPmaw.get_csv_cols(self.datafile))
+        elif self.datafile.endswith('.xlsx'):
+            df = pd.read_excel(self.datafile)
         self.data = pmaw_data.Data(df)
         
         if 'count' in entry_dict:
-            self.data.save_count_fields_csv(entry_dict['count'], self.frequency_file)
+            self.data.save_count_fields(entry_dict['count'], self.frequency_file, self.frequency_file_type_button.get_choice())
         if 'sum' in entry_dict:
-            self.data.save_sum_fields_csv(entry_dict['sum'], self.agg_sum_file)
+            self.data.save_sum_fields(entry_dict['sum'], self.agg_sum_file, self.frequency_file_type_button.get_choice())
 
         self.root.deiconify()
         self.clear_entries()
@@ -107,7 +112,12 @@ class DataGUI(BaseGUI): #TODO get way to count total comments returned
 
 
     def show_entries(self):
-        cols = CallPmaw.get_csv_cols(self.datafile)
+        if self.datafile.endswith('.csv'):
+            cols = CallPmaw.get_csv_cols(self.datafile)
+        elif self.datafile.endswith('xlsx'):
+            cols = CallPmaw.get_xlsx_cols(self.datafile)
+        else:
+            print('File type not recognized. File was: '+self.datafile)
 
         self.frequency_entries.remove_all_items()
         self.frequency_entries.add_items(cols)
@@ -148,12 +158,16 @@ class DataGUI(BaseGUI): #TODO get way to count total comments returned
     def check_checklists(self):
         if self.frequency_entries.get_checked_items():
             self.frequency_file_button.grid()
+            self.frequency_file_type_button.grid()
         else:
             self.frequency_file_button.grid_remove()
+            self.frequency_file_type_button.grid_remove()
         if self.agg_sum_entries.get_checked_items():
             self.agg_sum_file_button.grid()
+            self.agg_sum_file_type_button.grid()
         else:
             self.agg_sum_file_button.grid_remove()
+            self.agg_sum_file_type_button.grid_remove()
             
             
 

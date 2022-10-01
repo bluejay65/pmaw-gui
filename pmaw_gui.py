@@ -25,20 +25,20 @@ class PmawGUI():
         self.notebook.add(self.data_page, text='Data Analysis', sticky='news')
 
         self.notebook.bind('<<NotebookTabChanged>>', self.change_window)
+        self.change_window()
 
         self.root.mainloop()
 
-        #TODO when tab is changed, window size is changed
 
-    def change_window(self, event):
+    def change_window(self, event=None):
         page = self.notebook.index(self.notebook.select())
 
         if page == 0:
-            self.root.geometry('488x356')
+            self.root.geometry('490x360')
         elif page == 1:
-            self.root.geometry('540x759')
+            self.root.geometry('540x625')
         elif page == 2:
-            self.root.geometry('1349x759')
+            self.root.geometry('370x460')
 
 
 gui = PmawGUI()

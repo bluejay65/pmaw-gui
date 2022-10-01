@@ -1,10 +1,12 @@
+import sys
 import tkinter as tk
-from tkinter import Entry, filedialog
+from tkinter import filedialog
 from tkinter import messagebox
-from tkwidgets import LabelEntryList, Checklist, EntryType
+from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
 from search_pmaw import CallPmaw
 from base_gui import BaseGUI
 from enum import Enum
+from constants import FileType
 import constants
 
 
@@ -21,17 +23,17 @@ class Dropdowns(Enum):
 class SubmissionGUI(BaseGUI):
 
     search_fields = {
-                    'Search term': EntryType.ENTRY,
-                    'Exclude Search Term': EntryType.ENTRY,
+                    'Search Title and Body': EntryType.ENTRY,
+                    #'Exclude Search Term': EntryType.ENTRY,
                     'Search Title': EntryType.ENTRY,
-                    'Exclude Title Text': EntryType.ENTRY,
+                    #'Exclude Title Text': EntryType.ENTRY,
                     'Search Body': EntryType.ENTRY,
-                    'Exclude Body Text': EntryType.ENTRY,
-                    'Max results': EntryType.ENTRY,
+                    #'Exclude Body Text': EntryType.ENTRY,
+                    'Max Results': EntryType.ENTRY,
                     'Author': EntryType.ENTRY,
                     'Subreddit': EntryType.ENTRY,
-                    'Score': EntryType.RANGE,
-                    'Number of Comments': EntryType.RANGE,
+                    #'Score': EntryType.RANGE,
+                    #'Number of Comments': EntryType.RANGE,
                     ('NSFW Submissions', 'No Filter', 'NSFW Only', 'SFW Only'): EntryType.DROPDOWN,
                     ('Video Submissions', 'No Filter', 'Video Only', 'Exclude Videos'): EntryType.DROPDOWN,
                     ('Locked Comments', 'No Filter', 'Locked Only', 'Unlocked Only'): EntryType.DROPDOWN,
@@ -43,13 +45,13 @@ class SubmissionGUI(BaseGUI):
     }
 
     api_fields = {
-                    'Search term': 'q',
+                    'Search Title and Body': 'q',
                     'Exclude Search Term': 'q:not',
                     'Search Title': 'title',
                     'Exclude Title Text': 'title:not',
                     'Search Body': 'selftext',
                     'Exclude Body Text': 'selftext:not',
-                    'Max results': 'limit',
+                    'Max Results': 'limit',
                     'Author': 'author',
                     'Subreddit': 'subreddit',
                     'Score': 'score',
@@ -69,18 +71,20 @@ class SubmissionGUI(BaseGUI):
         self.root = root
 
         self.label_entries = LabelEntryList(self, self.search_fields)
-        self.label_entries.grid(row=0, column=0)
+        self.label_entries.grid(row=0, column=0, rowspan=2)
+        self.label_entries.update()
 
-        self.label_entries.set_entry('Max results', 500)
-
-        self.return_entries = Checklist(self, constants.submission_return_fields, title='Data to Return', scrollbar=True, height=759)
+        self.return_entries = Checklist(self, constants.submission_return_fields, title='Data to Return', scrollbar=True, height=450)
 
         self.return_entries.grid(row=0, column=1)
         self.reset_return_fields()
 
+        self.file_type_button = Radiolist(self, options=[e.value for e in FileType], title='Save as File Type')
+        self.file_type_button.grid(row=1, column=1)
+
         self.file_selected = ''
         self.button_frame = tk.Frame(self)
-        self.button_frame.grid(row=1, column=0, columnspan=2)
+        self.button_frame.grid(row=2, column=0, columnspan=2)
         self.button_frame.columnconfigure(0, pad=20)
         self.button_frame.columnconfigure(1, pad=20)
 
@@ -90,10 +94,9 @@ class SubmissionGUI(BaseGUI):
 
         self.rowconfigure(0, pad=10)
         self.rowconfigure(1, pad=10)
+        self.rowconfigure(2, pad=10)
         self.columnconfigure(0, pad=20)
         self.columnconfigure(1, pad=20)
-
-
 
 
     def run(self):
@@ -102,7 +105,7 @@ class SubmissionGUI(BaseGUI):
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
         self.root.withdraw()
-        CallPmaw.save_submission_csv(entry_dict, self.file_selected)
+        CallPmaw.save_submission_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice())
         self.root.deiconify()
 
     
@@ -120,10 +123,11 @@ class SubmissionGUI(BaseGUI):
     def reset_return_fields(self):
         self.return_entries.check_items([
                                         'author',
-                                        'body',
                                         'created_utc',
                                         'score',
-                                        'subreddit'
+                                        'selftext',
+                                        'subreddit',
+                                        'title'
                                         ])
 
 
@@ -147,7 +151,11 @@ class SubmissionGUI(BaseGUI):
                 if entry_dict[self.api_fields[key]] == '':
                     entry_dict[self.api_fields[key]] = None
 
-        entry_dict['limit'] = int(entry_dict['limit'])
+        if entry_dict['limit']:
+            entry_dict['limit'] = int(entry_dict['limit']) #TODO Nonetype isn't working if nothing is entered
+        else:
+            entry_dict['limit'] = sys.maxsize
+            
         entry_dict['fields'] = self.return_entries.get_checked_items()
 
         if entry_dict['after']['date']:

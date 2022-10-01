@@ -10,6 +10,7 @@ class LabelCombobox(tk.Frame):
 
         self.combobox_str = tk.StringVar()
         self.combobox = ttk.Combobox(parent, textvariable=self.combobox_str, values=options, state='readonly', width=width)
+        self.combobox_str.set(options[0])
 
         self.label.grid(row=row, column=column, sticky='w')
         self.combobox.grid(row=row, column=column+1)

@@ -13,14 +13,14 @@ class VerticalScrolledFrame(ttk.Frame):
     * This frame only allows vertical scrolling
     * This comes from a different naming of the the scrollwheel 'button', on different systems.
     """
-    def __init__(self, parent, *args, **kw):
+    def __init__(self, parent, height:int=None, *args, **kw):
 
         super().__init__(parent, *args, **kw)
 
         # create a canvas object and a vertical scrollbar for scrolling it
         self.vscrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL)
         self.vscrollbar.pack(fill=tk.Y, side=tk.RIGHT, expand=tk.FALSE)
-        self.canvas = tk.Canvas(self, bd=0, highlightthickness=0, yscrollcommand=self.vscrollbar.set)
+        self.canvas = tk.Canvas(self, bd=0, height=height, highlightthickness=0, yscrollcommand=self.vscrollbar.set)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=tk.TRUE)
         self.vscrollbar.config(command=self.canvas.yview)
 

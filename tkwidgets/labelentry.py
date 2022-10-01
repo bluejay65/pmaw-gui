@@ -16,6 +16,7 @@ class LabelEntry(tk.Frame):
 
         parent.rowconfigure(row, pad=padx)
 
+
     # Returns the string in the entry
     def get_entry(self):
         return self.entry_str.get()

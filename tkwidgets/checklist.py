@@ -7,17 +7,17 @@ import tkwidgets as tkw
 class Checklist(ttk.Labelframe):
 
     # Creates the checkbuttons from listvariable and adds them to the frame
-    def __init__(self, parent, listvariable: list, title: str = None, command: str = None, scrollbar: bool = False, **kwargs):
+    def __init__(self, parent, listvariable: list, height:int = None, title: str = None, command: str = None, scrollbar: bool = False, **kwargs):
         ttk.Labelframe.__init__(self, parent, text=title, **kwargs)
 
         self.command = command
         self.parent = parent
 
         if scrollbar:
-            self.frame = tkw.VerticalScrolledFrame(self)
+            self.frame = tkw.VerticalScrolledFrame(self, height=height)
             self.edit_frame = self.frame.interior
         else:
-            self.frame = self.edit_frame = tk.Frame(self)
+            self.frame = self.edit_frame = tk.Frame(self, height=height)
 
         self.frame.grid(row=0, column=0)
         self.vars = []
@@ -63,9 +63,12 @@ class Checklist(ttk.Labelframe):
     def remove_items(self, items: list):
         for item in items:
             if item in self.checkbuttons.keys():
+                self.checkbuttons[item].grid_forget()
                 self.checkbuttons.pop(item)
 
     def remove_all_items(self):
+        for item in self.checkbuttons.keys():
+            item.grid_forget()
         self.checkbuttons = {}
 
     # Selects a button
@@ -76,7 +79,7 @@ class Checklist(ttk.Labelframe):
     def deselect(self, item:str):
        self.checkbuttons[item].deselect()
 
-    # Selects the buttons in index_list, and deselects buttons not in index_lsit
+    # Selects the buttons in index_list, and deselects buttons not in index_list
     def check_items(self, index_list):
         for i in self.checkbuttons.keys():
             if i in index_list:

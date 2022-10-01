@@ -1,12 +1,13 @@
 from pmaw import PushshiftAPI
 import pandas as pd
-import os
+from constants import FileType
 
 
 class CallPmaw:
 
     def get_comment_df(dict):
         api = PushshiftAPI()
+        print("Running...")
 
         q = dict['q']
         limit = dict['limit']
@@ -31,13 +32,14 @@ class CallPmaw:
 
     def get_submission_df(dict):
         api = PushshiftAPI()
+        print("Running...")
 
         q = dict['q']
-        q_not = dict['q:not']
+        #q_not = dict['q:not']
         title = dict['title']
-        title_not = dict['title:not']
+        #title_not = dict['title:not']
         selftext = dict['selftext']
-        selftext_not = dict['selftext:not']
+        #selftext_not = dict['selftext:not']
         limit = dict['limit']
         fields = dict['fields']
         author = dict['author']
@@ -67,16 +69,27 @@ class CallPmaw:
         return pd.DataFrame(submission_list)
 
 
-    def save_comment_csv(dict, file):
-        CallPmaw.get_comment_df(dict).to_csv(file)
-
-        print('\nData saved to ' + file)
+    def save_comment_file(dict, file, file_type:FileType):
+        df = CallPmaw.get_comment_df(dict)
+        if not file.endswith(file_type):
+            file += file_type
+        CallPmaw.save_df_to_file(df, file, file_type)
+        print('\nComment data saved to ' + file)
         
+    def save_submission_file(dict, file, file_type:FileType):
+        df = CallPmaw.get_submission_df(dict)
+        if not file.endswith(file_type):
+            file += file_type
+        CallPmaw.save_df_to_file(df, file, file_type)
+        print('\nSubmission data saved to ' + file)
 
-    def save_submission_csv(dict, file):
-        CallPmaw.get_submission_df(dict).to_csv(file)
-
-        print('\nData saved to ' + file)
+    def save_df_to_file(df, file, file_type:FileType):
+        if file_type == FileType.CSV.value:
+            df.to_csv(file)
+        elif file_type == FileType.XLSX.value:
+            df.to_excel(file, index=False)
+        else:
+            raise ValueError('file_type was not an accepted value. Value was: '+ file_type)
 
 
     def get_csv_cols(file):
@@ -87,3 +100,7 @@ class CallPmaw:
         headers.pop(0)
         headers[-1] = headers[-1].strip()
         return headers
+
+    def get_xlsx_cols(file):
+        df = pd.read_excel(file)
+        return df.columns

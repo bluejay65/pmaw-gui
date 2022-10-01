@@ -1,4 +1,6 @@
+from msilib.schema import File
 import pandas as pd
+from constants import FileType
 
 
 class Data():
@@ -18,8 +20,13 @@ class Data():
         sum_df.columns = headers
         return sum_df
 
-    def save_sum_fields_csv(self, fields: list, file):
-        self.sum_fields(fields).to_csv(file)
+    def save_sum_fields(self, fields: list, file, file_type: FileType):
+        if file_type == FileType.CSV.value:
+            print('yes')
+            self.sum_fields(fields).to_csv(file)
+        elif file_type == FileType.XLSX.value:
+            df = self.sum_fields(fields)
+            df.to_excel(file)
         print('Aggregate Sum saved to ' + file)
 
 
@@ -31,8 +38,11 @@ class Data():
         count_df.columns = ['frequency']
         return count_df
 
-    def save_count_fields_csv(self, fields: list, file):
-        self.count_fields(fields).to_csv(file)
+    def save_count_fields(self, fields: list, file, file_type: FileType):
+        if file_type is FileType.CSV:
+            self.count_fields(fields).to_csv(file)
+        elif file_type is FileType.XLSX:
+            self.count_fields(fields).to_excel(file)
         print('Frequency saved to ' + file)
 
 
