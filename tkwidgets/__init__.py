@@ -1,5 +1,7 @@
+from tkwidgets.buttonlist import *
 from tkwidgets.checklist import *
 from tkwidgets.constants import *
+from tkwidgets.fileentry import *
 from tkwidgets.labelcombobox import *
 from tkwidgets.labeldate import *
 from tkwidgets.labeldatetime import *

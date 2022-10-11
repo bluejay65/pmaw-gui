@@ -12,6 +12,7 @@ import constants
 class CommentGUI(BaseGUI):
 
     search_fields = {
+                    'Your Reddit Username' : EntryType.ENTRY,
                     'Search Term': EntryType.ENTRY,
                     'Max Results': EntryType.ENTRY,
                     'Author': EntryType.ENTRY,
@@ -21,6 +22,7 @@ class CommentGUI(BaseGUI):
     }
 
     api_fields = {
+                    'Your Reddit Username': 'username',
                     'Search Term': 'q',
                     'Max Results': 'limit',
                     'Author': 'author',
@@ -65,6 +67,9 @@ class CommentGUI(BaseGUI):
 
     def run(self):
         entry_dict = self.get_entries()
+        if entry_dict['username'] is None:
+            messagebox.showerror(message='Your reddit username needs to be provided', title='Reddit Username Missing')
+            return
         if entry_dict['q'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return

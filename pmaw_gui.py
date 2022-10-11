@@ -3,7 +3,6 @@ import comment_gui, data_gui, submission_gui
 from tkinter import ttk
 
 
-
 class PmawGUI():
     def __init__(self) -> None:
         self.root = tk.Tk()
@@ -34,11 +33,11 @@ class PmawGUI():
         page = self.notebook.index(self.notebook.select())
 
         if page == 0:
-            self.root.geometry('500x370')
+            self.root.geometry('550x380')
         elif page == 1:
             self.root.geometry('540x625')
         elif page == 2:
-            self.root.geometry('370x460')
+            self.root.geometry('370x480')
 
 
 gui = PmawGUI()

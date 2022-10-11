@@ -1,3 +1,4 @@
+from email import message
 import sys
 import tkinter as tk
 from tkinter import filedialog
@@ -23,6 +24,7 @@ class Dropdowns(Enum):
 class SubmissionGUI(BaseGUI):
 
     search_fields = {
+                    'Your Reddit Username' : EntryType.ENTRY,
                     'Search Title and Body': EntryType.ENTRY,
                     #'Exclude Search Term': EntryType.ENTRY,
                     'Search Title': EntryType.ENTRY,
@@ -45,6 +47,7 @@ class SubmissionGUI(BaseGUI):
     }
 
     api_fields = {
+                    'Your Reddit Username': 'username',
                     'Search Title and Body': 'q',
                     'Exclude Search Term': 'q:not',
                     'Search Title': 'title',
@@ -101,6 +104,9 @@ class SubmissionGUI(BaseGUI):
 
     def run(self):
         entry_dict = self.get_entries()
+        if entry_dict['username'] is None:
+            messagebox.showerror(message='Your reddit username needs to be provided', title='Reddit Username Missing')
+            return
         if entry_dict['q'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return

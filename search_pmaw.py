@@ -1,15 +1,15 @@
 from pmaw import PushshiftAPI
 import pandas as pd
 from constants import FileType
-import os.path
+import praw
 
 
 class CallPmaw:
 
     def get_comment_df(dict):
-        api = PushshiftAPI()
         print("Running...")
 
+        username = dict['username']
         q = dict['q']
         limit = dict['limit']
         fields = dict['fields']
@@ -17,6 +17,15 @@ class CallPmaw:
         subreddit = dict['subreddit']
         after = dict['after']
         before = dict['before']
+
+        fields.append('id')
+
+        reddit = praw.Reddit(
+                            client_id='zoRBoAT4ZIBxyoY6iq7GNg',
+                            client_secret=None,
+                            user_agent=f'python: PMAW request enrichment (by u/'+username+')' #TODO make this an entered username
+                            )
+        api = PushshiftAPI(praw=reddit)
 
         if isinstance(after, int) and isinstance(before, int):
             comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
@@ -27,14 +36,15 @@ class CallPmaw:
         else:
             comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
 
-        comment_list = [comment for comment in comments]
+        df = pd.DataFrame([comment for comment in comments])
+        df = CallPmaw.remove_extra_fields(df, fields)
 
-        return pd.DataFrame(comment_list)
+        return df
 
     def get_submission_df(dict):
-        api = PushshiftAPI()
         print("Running...")
 
+        username = dict['username']
         q = dict['q']
         #q_not = dict['q:not']
         title = dict['title']
@@ -54,7 +64,16 @@ class CallPmaw:
         spoiler = dict['spoiler']
         contest_mode = dict['contest_mode']
         #TODO get range to become a string
-        #TODO use psaw or something to get accurate scores etc.
+        #TODO use praw or something to get accurate scores etc.
+
+        fields.append('id')
+
+        reddit = praw.Reddit(
+                            client_id='zoRBoAT4ZIBxyoY6iq7GNg',
+                            client_secret=None,
+                            user_agent=f'python: PMAW request enrichment (by u/'+username+')'
+                            )
+        api = PushshiftAPI(praw=reddit)
 
         if isinstance(after, int) and isinstance(before, int):
             submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
@@ -91,6 +110,9 @@ class CallPmaw:
             raise ValueError('file_type was not an accepted value. Value was: '+ file_type)
 
 
+    def remove_extra_fields(df: pd.DataFrame, fields: list):
+        return df[fields]
+
     def get_csv_cols(file):
         with open(file, encoding="utf-8") as f:
             line = f.readline()
@@ -99,7 +121,6 @@ class CallPmaw:
         headers.pop(0)
         headers[-1] = headers[-1].strip()
         return headers
-            
 
     def get_xlsx_cols(file):
         df = pd.read_excel(file)

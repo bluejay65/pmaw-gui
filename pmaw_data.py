@@ -1,19 +1,14 @@
 from msilib.schema import File
 import pandas as pd
+import numpy as np
 from search_pmaw import CallPmaw
 from constants import FileType
+import random
 
 
 class Data():
-    def __init__(self, df: pd.DataFrame):
-        self.df = df
-        self.group_dict = {}
-
-    def sum_fields(self, fields: list):
-        fields_tuple = tuple(fields)
-        if fields_tuple not in self.group_dict:
-            self.group_dict[fields_tuple] = self.df.groupby(fields, sort=False)
-        sum_df = self.group_dict[fields_tuple].sum()
+    def sum_fields(df: pd.DataFrame, fields: list):
+        sum_df = df.groupby(fields, sort=False).sum()
 
         headers = []
         for i in range(len(sum_df.columns)):
@@ -21,46 +16,68 @@ class Data():
         sum_df.columns = headers
         return sum_df
 
-    def save_sum_fields(self, fields: list, file, file_type: FileType):
+    def save_sum_fields(df: pd.DataFrame, fields: list, file, file_type: FileType):
         file = CallPmaw.add_file_type(file, file_type)
         if file_type == FileType.CSV.value:
-            self.sum_fields(fields).to_csv(file)
+            Data.sum_fields(df, fields).to_csv(file)
         elif file_type == FileType.XLSX.value:
-            df = self.sum_fields(fields)
-            df.to_excel(file)
+            Data.sum_fields(df, fields).to_excel(file)
         print('Aggregate Sum saved to ' + file)
 
 
-    def count_fields(self, fields: list):
-        fields_tuple = tuple(fields)
-        if fields_tuple not in self.group_dict:
-            self.group_dict[fields_tuple] = self.df.groupby(fields, sort=False)
-        count_df = self.group_dict[fields_tuple].count().iloc[:, 0:len(fields)]
+    def count_fields(df: pd.DataFrame, fields: list):
+        count_df = df.groupby(fields, sort=False).count().iloc[:, 0:len(fields)]
         count_df.columns = ['frequency']
         return count_df
 
-    def save_count_fields(self, fields: list, file, file_type: FileType):
+    def save_count_fields(df: pd.DataFrame, fields: list, file, file_type: FileType):
         file = CallPmaw.add_file_type(file, file_type)
         if file_type == FileType.CSV.value:
-            self.count_fields(fields).to_csv(file)
+            Data.count_fields(df, fields).to_csv(file)
         elif file_type == FileType.XLSX.value:
-            self.count_fields(fields).to_excel(file)
-        else:
-            print
+            Data.count_fields(df, fields).to_excel(file)
         print('Frequency saved to ' + file)
 
+    
+    def gini_coefficient(df: pd.DataFrame, fields: list):
+        x = df[fields[0]].to_numpy()
+        sorted_x = np.sort(x)
+        n = len(x)
+        cumx = np.cumsum(sorted_x, dtype=float)
+        return (n + 1 - 2 * np.sum(cumx) / cumx[-1]) / n
 
-"""
-test_df = pd.DataFrame([['user1', 4, 5],
-                        ['user2', 1, 2],
-                        ['user3', 3, 4],
-                        ['user2', 4, 5],
-                        ['user3', 30, 31],
-                        ['user3', -200, -199]],
-                        columns=['author', 'score', 'controversiality'])
+    def save_gini_coefficent(df: pd.DataFrame, fields: list, file, file_type: FileType):
+        file = CallPmaw.add_file_type(file, file_type)
+        gini = Data.gini_coefficient(df, fields)
+        if file_type == FileType.CSV.value:
+            pd.DataFrame({fields[0]+' Gini Coefficient': [gini]}).to_csv(file)
+        elif file_type == FileType.XLSX.value:
+            pd.DataFrame({fields[0]+' Gini Coefficient': [gini]}).to_excel(file)
+        print('Gini Coefficient of: '+str(gini)+' saved to ' + file)
 
-data = Data(test_df)
+#TODO: fix error when not selecting file
+#TODO: make gini coefficient save in file?
+#TODO: make it more clear which data thing is selected
+#TODO: move data file button
+#TODO: add human readable data field
 
-print(data.sum_fields('author'))
-print(data.count_fields('author'))
-"""
+a = random.random()*10000
+b = random.random()*10000
+c = random.random()*10000
+d = random.random()*10000
+e = random.random()*10000
+f = random.random()*10000
+
+print(str(a)+', '+str(b)+', '+str(c)+', '+str(d)+', '+str(e)+', '+str(f))
+
+test_df = pd.DataFrame([['user1', a],
+                        ['user2', b],
+                        ['user3', c],
+                        ['user2', d],
+                        ['user3', e],
+                        ['user3', f]],
+                        columns=['author', 'frequency'])
+
+
+print(Data.gini_coefficient(test_df, ['frequency']))
+

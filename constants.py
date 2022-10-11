@@ -1,8 +1,13 @@
-from enum import Enum
+from enum import Enum, auto
 
 class FileType(Enum):
     CSV = '.csv'
     XLSX = '.xlsx'
+
+class DataType(Enum):
+    AGGREGATE_SUM = 'Aggregate Sum'
+    FREQUENCY = 'Frequency'
+    GINI_COEFFICIENCT = 'Gini Coefficient'
 
 comment_return_fields = [
                     'all_awardings',
@@ -14,7 +19,6 @@ comment_return_fields = [
                     'controversiality',
                     'created_utc',
                     'gilded',
-                    'id',
                     'link_id',
                     'locked',
                     'parent_id',
