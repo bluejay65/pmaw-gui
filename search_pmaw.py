@@ -1,5 +1,7 @@
+from sqlite3 import Row
 from pmaw import PushshiftAPI
 import pandas as pd
+import numpy as np
 from constants import FileType
 import praw
 
@@ -36,7 +38,11 @@ class CallPmaw:
         else:
             comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
 
+        print('Organizing collected data...')
+
         df = pd.DataFrame([comment for comment in comments])
+        if 'datetime' in fields:
+            df['datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
         df = CallPmaw.remove_extra_fields(df, fields)
 
         return df
@@ -63,8 +69,6 @@ class CallPmaw:
         stickied = dict['stickied']
         spoiler = dict['spoiler']
         contest_mode = dict['contest_mode']
-        #TODO get range to become a string
-        #TODO use praw or something to get accurate scores etc.
 
         fields.append('id')
 
@@ -84,9 +88,14 @@ class CallPmaw:
         else:
             submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
 
-        submission_list = [s for s in submissions]
+        print('Organizing collected data...')
 
-        return pd.DataFrame(submission_list)
+        df = pd.DataFrame([s for s in submissions])
+        if 'datetime' in fields:
+            df['datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
+        df = CallPmaw.remove_extra_fields(df, fields)
+
+        return df
 
 
     def save_comment_file(dict, file, file_type:FileType):
@@ -102,16 +111,20 @@ class CallPmaw:
         print('\nSubmission data saved to ' + file)
 
     def save_df_to_file(df, file, file_type:FileType):
+        print('Saving organized data...')
         if file_type == FileType.CSV.value:
             df.to_csv(file)
         elif file_type == FileType.XLSX.value:
-            df.to_excel(file, index=False)
+            df.to_excel(file, index=False, engine='xlsxwriter')
         else:
             raise ValueError('file_type was not an accepted value. Value was: '+ file_type)
 
 
     def remove_extra_fields(df: pd.DataFrame, fields: list):
         return df[fields]
+
+    def add_datetime(epoch_col):
+        print(np.datetime64(epoch_col, 's'))
 
     def get_csv_cols(file):
         with open(file, encoding="utf-8") as f:

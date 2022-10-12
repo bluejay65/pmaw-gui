@@ -2,7 +2,7 @@ from enum import Enum, auto
 
 class FileType(Enum):
     CSV = '.csv'
-    XLSX = '.xlsx'
+    XLSX = '.csv'
 
 class DataType(Enum):
     AGGREGATE_SUM = 'Aggregate Sum'
@@ -18,6 +18,7 @@ comment_return_fields = [
                     'comment_type',
                     'controversiality',
                     'created_utc',
+                    'datetime',
                     'gilded',
                     'link_id',
                     'locked',
@@ -46,6 +47,7 @@ submission_return_fields = [
                     'can_mod_post',
                     'contest_mode',
                     'created_utc',
+                    'datetime',
                     'full_link',
                     'is_crosspostable',
                     'is_meta',

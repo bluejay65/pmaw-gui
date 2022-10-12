@@ -94,6 +94,7 @@ class CommentGUI(BaseGUI):
                                         'author',
                                         'body',
                                         'created_utc',
+                                        'datetime',
                                         'score',
                                         'subreddit'
                                         ])

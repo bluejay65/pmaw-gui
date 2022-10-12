@@ -61,6 +61,7 @@ class Data():
 #TODO: move data file button
 #TODO: add human readable data field
 
+"""
 a = random.random()*10000
 b = random.random()*10000
 c = random.random()*10000
@@ -80,4 +81,4 @@ test_df = pd.DataFrame([['user1', a],
 
 
 print(Data.gini_coefficient(test_df, ['frequency']))
-
+"""

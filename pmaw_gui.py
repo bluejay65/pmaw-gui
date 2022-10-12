@@ -6,7 +6,7 @@ from tkinter import ttk
 class PmawGUI():
     def __init__(self) -> None:
         self.root = tk.Tk()
-        self.root.title("Reddit Data 0.1")
+        self.root.title("Data Collection for Reddit 0.2")
         self.root.columnconfigure(0, weight=100)
         self.root.rowconfigure(0, weight=100)
         self.root.resizable(False, False)
@@ -41,3 +41,6 @@ class PmawGUI():
 
 
 gui = PmawGUI()
+
+#TODO fix excel
+#TODO fix file saving and opening

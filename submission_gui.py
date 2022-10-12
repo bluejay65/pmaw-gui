@@ -107,7 +107,7 @@ class SubmissionGUI(BaseGUI):
         if entry_dict['username'] is None:
             messagebox.showerror(message='Your reddit username needs to be provided', title='Reddit Username Missing')
             return
-        if entry_dict['q'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
+        if entry_dict['q'] is None and entry_dict['title'] is None and entry_dict['selftext'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
         self.root.withdraw()
@@ -130,6 +130,7 @@ class SubmissionGUI(BaseGUI):
         self.return_entries.check_items([
                                         'author',
                                         'created_utc',
+                                        'datetime',
                                         'score',
                                         'selftext',
                                         'subreddit',
