@@ -1,12 +1,13 @@
 import tkinter as tk
 import comment_gui, data_gui, submission_gui
+import constants
 from tkinter import ttk
 
 
 class PmawGUI():
     def __init__(self) -> None:
         self.root = tk.Tk()
-        self.root.title("Data Collection for Reddit 0.2")
+        self.root.title("Data Collection for Reddit "+constants.version)
         self.root.columnconfigure(0, weight=100)
         self.root.rowconfigure(0, weight=100)
         self.root.resizable(False, False)
@@ -33,14 +34,15 @@ class PmawGUI():
         page = self.notebook.index(self.notebook.select())
 
         if page == 0:
-            self.root.geometry('550x380')
+            self.root.geometry(str(constants.comment_width)+'x'+str(constants.comment_height))
         elif page == 1:
-            self.root.geometry('540x625')
+            self.root.geometry(str(constants.submission_width)+'x'+str(constants.submission_height))
         elif page == 2:
-            self.root.geometry('370x480')
+            self.root.geometry(str(constants.data_width)+'x'+str(constants.data_height))
 
 
 gui = PmawGUI()
 
-#TODO fix excel
-#TODO fix file saving and opening
+#TODO have little windows pop up when hovering over something to describe what it does
+#TODO add utc_received to return fields and add description of what it does to guide
+#TODO make entrylists able to have a box around them with a title

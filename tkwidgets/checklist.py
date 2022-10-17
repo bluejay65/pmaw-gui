@@ -68,7 +68,7 @@ class Checklist(ttk.Labelframe):
 
     def remove_all_items(self):
         for item in self.checkbuttons.keys():
-            item.grid_forget()
+            self.checkbuttons[item].grid_forget()
         self.checkbuttons = {}
 
     # Selects a button

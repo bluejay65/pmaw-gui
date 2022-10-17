@@ -1,8 +1,30 @@
-from enum import Enum, auto
+from enum import Enum
+
+version = '0.2.1'
+
+comment_width = 550
+comment_height = 380
+
+submission_width = 540
+submission_height = 625
+
+data_width = 310
+data_height = 350
 
 class FileType(Enum):
     CSV = '.csv'
-    XLSX = '.csv'
+    XLSX = '.xlsx'
+
+class ExportFileType(Enum):
+    CSV = '.csv'
+
+class ImportFileType(Enum):
+    CSV = '.csv'
+    XLSX = '.xlsx'
+
+class SearchType(Enum):
+    PMAW = 'Archived Data'
+    PRAW = 'Reddit Data'
 
 class DataType(Enum):
     AGGREGATE_SUM = 'Aggregate Sum'
@@ -15,15 +37,16 @@ comment_return_fields = [
                     'author',
                     'author_flair_text',
                     'body',
+                    'collapsed',
                     'comment_type',
                     'controversiality',
                     'created_utc',
                     'datetime',
                     'gilded',
+                    'is_submitter',
                     'link_id',
                     'locked',
                     'parent_id',
-                    'permalink',
                     'retrieved_utc',
                     'score',
                     'score_hidden',
@@ -42,13 +65,13 @@ submission_return_fields = [
                     'allow_live_comments',
                     'author',
                     'author_flair_text',
-                    'author_is_blocked',
                     'awarders',
                     'can_mod_post',
                     'contest_mode',
                     'created_utc',
                     'datetime',
                     'full_link',
+                    'is_created_from_ads_ui',
                     'is_crosspostable',
                     'is_meta',
                     'is_original_content',
@@ -62,8 +85,8 @@ submission_return_fields = [
                     'num_comments',
                     'num_crossposts',
                     'over_18',
-                    'permalink'
                     'pinned',
+                    'preview',
                     'retrieved_on',
                     'score',
                     'selftext',
@@ -71,7 +94,6 @@ submission_return_fields = [
                     'spoiler',
                     'stickied',
                     'subreddit',
-                    'subreddit_id',
                     'subreddit_subscribers',
                     'subreddit_type',
                     'title',

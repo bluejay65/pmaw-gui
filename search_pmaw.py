@@ -2,16 +2,15 @@ from sqlite3 import Row
 from pmaw import PushshiftAPI
 import pandas as pd
 import numpy as np
-from constants import FileType
+from constants import FileType, SearchType
 import praw
 
 
 class CallPmaw:
 
-    def get_comment_df(dict):
-        print("Running...")
+    def get_comment_df(dict, search_type:SearchType):
+        print("\nRunning...")
 
-        username = dict['username']
         q = dict['q']
         limit = dict['limit']
         fields = dict['fields']
@@ -20,14 +19,18 @@ class CallPmaw:
         after = dict['after']
         before = dict['before']
 
-        fields.append('id')
+        if search_type == SearchType.PRAW.value:
+            username = dict['username']
+            fields.append('id')
 
-        reddit = praw.Reddit(
-                            client_id='zoRBoAT4ZIBxyoY6iq7GNg',
-                            client_secret=None,
-                            user_agent=f'python: PMAW request enrichment (by u/'+username+')' #TODO make this an entered username
-                            )
-        api = PushshiftAPI(praw=reddit)
+            reddit = praw.Reddit(
+                                client_id='zoRBoAT4ZIBxyoY6iq7GNg',
+                                client_secret=None,
+                                user_agent=f'python: PMAW request enrichment (by u/'+username+')' #TODO make this an entered username
+                                )
+            api = PushshiftAPI(praw=reddit)
+        else:
+            api = PushshiftAPI()
 
         if isinstance(after, int) and isinstance(before, int):
             comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
@@ -47,10 +50,9 @@ class CallPmaw:
 
         return df
 
-    def get_submission_df(dict):
-        print("Running...")
+    def get_submission_df(dict, search_type: SearchType):
+        print("\nRunning...")
 
-        username = dict['username']
         q = dict['q']
         #q_not = dict['q:not']
         title = dict['title']
@@ -70,14 +72,21 @@ class CallPmaw:
         spoiler = dict['spoiler']
         contest_mode = dict['contest_mode']
 
-        fields.append('id')
+        if search_type == SearchType.PRAW.value:
+            username = dict['username']
+            fields.append('id')
 
-        reddit = praw.Reddit(
-                            client_id='zoRBoAT4ZIBxyoY6iq7GNg',
-                            client_secret=None,
-                            user_agent=f'python: PMAW request enrichment (by u/'+username+')'
-                            )
-        api = PushshiftAPI(praw=reddit)
+            reddit = praw.Reddit(
+                                client_id='zoRBoAT4ZIBxyoY6iq7GNg',
+                                client_secret=None,
+                                user_agent=f'python: PMAW request enrichment (by u/'+username+')' #TODO make this an entered username
+                                )
+            api = PushshiftAPI(praw=reddit)
+        else:
+            api = PushshiftAPI()
+            #if 'full_link' in fields:
+                #fields.remove('full_link')
+
 
         if isinstance(after, int) and isinstance(before, int):
             submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
@@ -98,17 +107,17 @@ class CallPmaw:
         return df
 
 
-    def save_comment_file(dict, file, file_type:FileType):
-        df = CallPmaw.get_comment_df(dict)
+    def save_comment_file(dict, file, file_type:FileType, search_type:SearchType):
+        df = CallPmaw.get_comment_df(dict, search_type)
         file = CallPmaw.add_file_type(file, file_type)
         CallPmaw.save_df_to_file(df, file, file_type)
-        print('\nComment data saved to ' + file)
+        print('Comment data saved to ' + file)
         
-    def save_submission_file(dict, file, file_type:FileType):
-        df = CallPmaw.get_submission_df(dict)
+    def save_submission_file(dict, file, file_type:FileType, search_type:SearchType):
+        df = CallPmaw.get_submission_df(dict, search_type)
         file = CallPmaw.add_file_type(file, file_type)
         CallPmaw.save_df_to_file(df, file, file_type)
-        print('\nSubmission data saved to ' + file)
+        print('Submission data saved to ' + file)
 
     def save_df_to_file(df, file, file_type:FileType):
         print('Saving organized data...')
@@ -121,10 +130,21 @@ class CallPmaw:
 
 
     def remove_extra_fields(df: pd.DataFrame, fields: list):
-        return df[fields]
+        try:
+            return df[fields]
+        except:
+            cols = df.columns
+            safe_cols = []
+            err_cols = []
+            for field in fields:
+                if field in cols:
+                    safe_cols.append(field)
+                else:
+                    err_cols.append(field)
+            print('ERROR Returned Fields '+str(err_cols)+' were not available')
+            return df[safe_cols]
 
-    def add_datetime(epoch_col):
-        print(np.datetime64(epoch_col, 's'))
+
 
     def get_csv_cols(file):
         with open(file, encoding="utf-8") as f:
@@ -139,7 +159,7 @@ class CallPmaw:
         df = pd.read_excel(file)
         return df.columns
 
-    def add_file_type(file, file_type):
+    def add_file_type(file, file_type: str):
         if not file.endswith(file_type):
             file += file_type
         return file

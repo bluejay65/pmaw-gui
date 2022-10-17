@@ -7,7 +7,7 @@ from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
 from search_pmaw import CallPmaw
 from base_gui import BaseGUI
 from enum import Enum
-from constants import FileType
+from constants import ExportFileType, SearchType
 import constants
 
 
@@ -22,7 +22,6 @@ class Dropdowns(Enum):
 
 
 class SubmissionGUI(BaseGUI):
-
     search_fields = {
                     'Your Reddit Username' : EntryType.ENTRY,
                     'Search Title and Body': EntryType.ENTRY,
@@ -82,8 +81,12 @@ class SubmissionGUI(BaseGUI):
         self.return_entries.grid(row=0, column=1)
         self.reset_return_fields()
 
-        self.file_type_button = Radiolist(self, options=[e.value for e in FileType], title='Save as File Type')
-        self.file_type_button.grid(row=1, column=1)
+        self.file_type_button = Radiolist(self, options=[e.value for e in ExportFileType], title='Save as File Type')
+        #self.file_type_button.grid(row=1, column=1)
+
+        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using')
+        self.search_type_button.grid(row=1, column=1)
+        self.search_type_button.select(SearchType.PRAW.value)
 
         self.file_selected = ''
         self.button_frame = tk.Frame(self)
@@ -104,14 +107,14 @@ class SubmissionGUI(BaseGUI):
 
     def run(self):
         entry_dict = self.get_entries()
-        if entry_dict['username'] is None:
+        if self.search_type_button.get_choice() == SearchType.PRAW.value and entry_dict['username'] is None:
             messagebox.showerror(message='Your reddit username needs to be provided', title='Reddit Username Missing')
             return
         if entry_dict['q'] is None and entry_dict['title'] is None and entry_dict['selftext'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
         self.root.withdraw()
-        CallPmaw.save_submission_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice())
+        CallPmaw.save_submission_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
         self.root.deiconify()
 
     
@@ -119,8 +122,8 @@ class SubmissionGUI(BaseGUI):
         self.file_selected = filedialog.asksaveasfilename()
 
         if self.file_selected:
-            self.run_button.grid(row=0, column=0)
-            self.file_button.grid(row=0, column=1)
+            self.run_button.grid(row=0, column=1)
+            self.file_button.grid(row=0, column=0)
         else:
             self.run_button.grid_forget()
             self.file_button.grid(row=0, column=0)

@@ -49,4 +49,5 @@ class Radiolist(ttk.Labelframe):
 
     # Selects a button
     def select(self, item:str):
-        self.choice = item
+        if item in self.radiobuttons.keys():
+            self.choice.set(item)
