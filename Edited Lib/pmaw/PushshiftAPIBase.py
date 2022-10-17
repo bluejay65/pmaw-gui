@@ -107,7 +107,8 @@ class PushshiftAPIBase:
 
                 # check if shards are down
                 if self.shards_are_down and (self.shards_down_behavior is not None):
-                    shards_down_message = "Not all PushShift shards are active. Query results may be incomplete."
+                    shards = self.metadata_.get('shards')
+                    shards_down_message = "Not all PushShift shards are active ("+str(shards['successful'])+"/"+str(shards['total'])+"). Query results may be incomplete."
                     if self.shards_down_behavior == 'warn':
                         log.warning(shards_down_message)
                     if self.shards_down_behavior == 'stop':

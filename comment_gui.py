@@ -35,7 +35,7 @@ class CommentGUI(BaseGUI):
         tk.Frame.__init__(self, parent, **kwargs)
         self.root = root
 
-        self.label_entries = LabelEntryList(self, self.search_fields)
+        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters')
         self.label_entries.grid(row=0, column=0, rowspan=2)
 
         self.return_entries = Checklist(self, constants.comment_return_fields, title='Data to Return', height = 200, scrollbar=True)
@@ -95,8 +95,7 @@ class CommentGUI(BaseGUI):
         self.return_entries.check_items([
                                         'author',
                                         'body',
-                                        'created_utc',
-                                        'datetime',
+                                        'created_datetime',
                                         'score',
                                         'subreddit'
                                         ])

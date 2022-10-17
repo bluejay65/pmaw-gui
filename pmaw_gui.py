@@ -44,5 +44,6 @@ class PmawGUI():
 gui = PmawGUI()
 
 #TODO have little windows pop up when hovering over something to describe what it does
-#TODO add utc_received to return fields and add description of what it does to guide
-#TODO make entrylists able to have a box around them with a title
+#TODO have the return fields that don't work with the apis remove when switching, but save their selection (a hide method?)
+#TODO fix error when opening files already in use (line 125 in search_pmaw.py)
+#TODO allow user to not select a date after putting something in, and to only put a year, or a year and a month

@@ -5,9 +5,9 @@ import tkwidgets as tkw
 
 
 # A frame containing a list of LabelEntries
-class LabelEntryList(tk.Frame):
-    def __init__(self, parent, dictvariable: dict, **kwargs):
-        tk.Frame.__init__(self, parent, **kwargs)
+class LabelEntryList(ttk.LabelFrame):
+    def __init__(self, parent, dictvariable: dict, title: str, **kwargs):
+        ttk.LabelFrame.__init__(self, parent, text=title, **kwargs)
         self.parent = parent
 
         self.label_entry_dict = {}

@@ -72,7 +72,7 @@ class SubmissionGUI(BaseGUI):
         tk.Frame.__init__(self, parent, **kwargs)
         self.root = root
 
-        self.label_entries = LabelEntryList(self, self.search_fields)
+        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters')
         self.label_entries.grid(row=0, column=0, rowspan=2)
         self.label_entries.update()
 
@@ -132,8 +132,7 @@ class SubmissionGUI(BaseGUI):
     def reset_return_fields(self):
         self.return_entries.check_items([
                                         'author',
-                                        'created_utc',
-                                        'datetime',
+                                        'created_datetime',
                                         'score',
                                         'selftext',
                                         'subreddit',

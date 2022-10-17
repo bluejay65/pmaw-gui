@@ -3,10 +3,10 @@ from enum import Enum
 version = '0.2.1'
 
 comment_width = 550
-comment_height = 380
+comment_height = 400
 
 submission_width = 540
-submission_height = 625
+submission_height = 645
 
 data_width = 310
 data_height = 350
@@ -40,13 +40,14 @@ comment_return_fields = [
                     'collapsed',
                     'comment_type',
                     'controversiality',
+                    'created_datetime',
                     'created_utc',
-                    'datetime',
                     'gilded',
                     'is_submitter',
                     'link_id',
                     'locked',
                     'parent_id',
+                    'retrieved_datetime',
                     'retrieved_utc',
                     'score',
                     'score_hidden',
@@ -68,8 +69,8 @@ submission_return_fields = [
                     'awarders',
                     'can_mod_post',
                     'contest_mode',
+                    'created_datetime',
                     'created_utc',
-                    'datetime',
                     'full_link',
                     'is_created_from_ads_ui',
                     'is_crosspostable',
@@ -87,6 +88,7 @@ submission_return_fields = [
                     'over_18',
                     'pinned',
                     'preview',
+                    'retrieved_datetime',
                     'retrieved_on',
                     'score',
                     'selftext',

@@ -13,11 +13,20 @@ class CallPmaw:
 
         q = dict['q']
         limit = dict['limit']
-        fields = dict['fields']
+        fields: list = dict['fields']
         author = dict['author']
         subreddit = dict['subreddit']
         after = dict['after']
         before = dict['before']
+
+        keep_fields = fields.copy()
+        if 'created_datetime' in fields:
+            fields.append('created_utc')
+        if 'retrieved_datetime' in fields:
+            print('this is true')
+            fields.append('retrieved_utc')
+
+        print('retrieved_utc' in keep_fields)
 
         if search_type == SearchType.PRAW.value:
             username = dict['username']
@@ -44,9 +53,14 @@ class CallPmaw:
         print('Organizing collected data...')
 
         df = pd.DataFrame([comment for comment in comments])
-        if 'datetime' in fields:
-            df['datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
-        df = CallPmaw.remove_extra_fields(df, fields)
+        if 'created_datetime' in fields:
+            df['created_datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
+        if 'retrieved_datetime' in fields and search_type == SearchType.PMAW.value:
+            try:
+                df['retrieved_datetime'] = pd.to_datetime(df.loc[:, 'retrieved_utc'], unit='s', origin='unix')
+            except:
+                pass
+        df = CallPmaw.remove_extra_fields(df, keep_fields)
 
         return df
 
@@ -60,7 +74,7 @@ class CallPmaw:
         selftext = dict['selftext']
         #selftext_not = dict['selftext:not']
         limit = dict['limit']
-        fields = dict['fields']
+        fields: list = dict['fields']
         author = dict['author']
         subreddit = dict['subreddit']
         after = dict['after']
@@ -71,6 +85,12 @@ class CallPmaw:
         stickied = dict['stickied']
         spoiler = dict['spoiler']
         contest_mode = dict['contest_mode']
+
+        keep_fields = fields.copy()
+        if 'created_datetime' in fields:
+            fields.append('created_utc')
+        if 'retrieved_datetime' in fields:
+            fields.append('retrieved_on')
 
         if search_type == SearchType.PRAW.value:
             username = dict['username']
@@ -84,9 +104,6 @@ class CallPmaw:
             api = PushshiftAPI(praw=reddit)
         else:
             api = PushshiftAPI()
-            #if 'full_link' in fields:
-                #fields.remove('full_link')
-
 
         if isinstance(after, int) and isinstance(before, int):
             submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
@@ -100,9 +117,14 @@ class CallPmaw:
         print('Organizing collected data...')
 
         df = pd.DataFrame([s for s in submissions])
-        if 'datetime' in fields:
-            df['datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
-        df = CallPmaw.remove_extra_fields(df, fields)
+        if 'created_datetime' in fields:
+            df['created_datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
+        if 'retrieved_datetime' in fields and search_type == SearchType.PMAW.value:
+            try:
+                df['retrieved_datetime'] = pd.to_datetime(df.loc[:, 'retrieved_on'], unit='s', origin='unix')
+            except:
+                pass
+        df = CallPmaw.remove_extra_fields(df, keep_fields)
 
         return df
 
@@ -141,7 +163,7 @@ class CallPmaw:
                     safe_cols.append(field)
                 else:
                     err_cols.append(field)
-            print('ERROR Returned Fields '+str(err_cols)+' were not available')
+            print('WARNING: Requested Data '+str(err_cols)+' is not available')
             return df[safe_cols]
 
 
