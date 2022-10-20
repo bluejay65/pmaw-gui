@@ -1,7 +1,9 @@
 # My additions
 Scripts/
+datasets/
 pyvenv.cfg
 greenlet.h
+secret_constants.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,15 +1,16 @@
 from enum import Enum
 
-version = '0.2.1'
+VERSION = '0.2.2'
+APP_NAME = 'Dataset Collector for Reddit'
 
-comment_width = 550
-comment_height = 400
+COMMENT_WIDTH = 550
+COMMENT_HEIGHT = 370
 
-submission_width = 540
-submission_height = 645
+SUBMISSION_WIDTH = 540
+SUBMISSION_HEIGHT = 620
 
-data_width = 310
-data_height = 350
+DATA_WIDTH = 310
+DATA_HEIGHT = 350
 
 class FileType(Enum):
     CSV = '.csv'
@@ -31,7 +32,7 @@ class DataType(Enum):
     FREQUENCY = 'Frequency'
     GINI_COEFFICIENCT = 'Gini Coefficient'
 
-comment_return_fields = [
+COMMENT_RETURN_FIELDS = [
                     'all_awardings',
                     'archived',
                     'author',
@@ -61,7 +62,7 @@ comment_return_fields = [
                     'treatment_tags'
     ]
 
-submission_return_fields = [
+SUBMISSION_RETURN_FIELDS = [
                     'all_awardings',
                     'allow_live_comments',
                     'author',
@@ -71,6 +72,7 @@ submission_return_fields = [
                     'contest_mode',
                     'created_datetime',
                     'created_utc',
+                    'domain',
                     'full_link',
                     'is_created_from_ads_ui',
                     'is_crosspostable',

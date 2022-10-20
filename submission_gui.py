@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
-from search_pmaw import CallPmaw
 from base_gui import BaseGUI
 from enum import Enum
 from constants import ExportFileType, SearchType
@@ -23,7 +22,6 @@ class Dropdowns(Enum):
 
 class SubmissionGUI(BaseGUI):
     search_fields = {
-                    'Your Reddit Username' : EntryType.ENTRY,
                     'Search Title and Body': EntryType.ENTRY,
                     #'Exclude Search Term': EntryType.ENTRY,
                     'Search Title': EntryType.ENTRY,
@@ -46,7 +44,6 @@ class SubmissionGUI(BaseGUI):
     }
 
     api_fields = {
-                    'Your Reddit Username': 'username',
                     'Search Title and Body': 'q',
                     'Exclude Search Term': 'q:not',
                     'Search Title': 'title',
@@ -68,15 +65,16 @@ class SubmissionGUI(BaseGUI):
                     'Posted before': 'before'
     }
 
-    def __init__(self, parent, root, **kwargs):
+    def __init__(self, pmaw, parent, root, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
+        self.pmaw = pmaw
         self.root = root
 
         self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters')
         self.label_entries.grid(row=0, column=0, rowspan=2)
         self.label_entries.update()
 
-        self.return_entries = Checklist(self, constants.submission_return_fields, title='Data to Return', scrollbar=True, height=450)
+        self.return_entries = Checklist(self, constants.SUBMISSION_RETURN_FIELDS, title='Data to Return', scrollbar=True, height=450)
 
         self.return_entries.grid(row=0, column=1)
         self.reset_return_fields()
@@ -107,14 +105,11 @@ class SubmissionGUI(BaseGUI):
 
     def run(self):
         entry_dict = self.get_entries()
-        if self.search_type_button.get_choice() == SearchType.PRAW.value and entry_dict['username'] is None:
-            messagebox.showerror(message='Your reddit username needs to be provided', title='Reddit Username Missing')
-            return
         if entry_dict['q'] is None and entry_dict['title'] is None and entry_dict['selftext'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
         self.root.withdraw()
-        CallPmaw.save_submission_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
+        self.pmaw.save_submission_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
         self.root.deiconify()
 
     

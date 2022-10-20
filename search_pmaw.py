@@ -1,14 +1,19 @@
 from sqlite3 import Row
 from pmaw import PushshiftAPI
 import pandas as pd
-import numpy as np
-from constants import FileType, SearchType
-import praw
+import platform
+from constants import FileType, SearchType, VERSION
+from app_info import AppInfo
+import praw, prawcore
+from prawcore import auth, requestor
+import secret_constants
 
 
 class CallPmaw:
+    def __init__(self):
+        self.praw = None
 
-    def get_comment_df(dict, search_type:SearchType):
+    def get_comment_df(self, dict, search_type:SearchType):
         print("\nRunning...")
 
         q = dict['q']
@@ -20,24 +25,15 @@ class CallPmaw:
         before = dict['before']
 
         keep_fields = fields.copy()
-        if 'created_datetime' in fields:
+        if 'created_datetime' in fields and 'created_utc' not in fields:
             fields.append('created_utc')
-        if 'retrieved_datetime' in fields:
-            print('this is true')
+        if 'retrieved_datetime' in fields and 'retrieved_utc' not in fields:
             fields.append('retrieved_utc')
 
-        print('retrieved_utc' in keep_fields)
-
         if search_type == SearchType.PRAW.value:
-            username = dict['username']
             fields.append('id')
 
-            reddit = praw.Reddit(
-                                client_id='zoRBoAT4ZIBxyoY6iq7GNg',
-                                client_secret=None,
-                                user_agent=f'python: PMAW request enrichment (by u/'+username+')' #TODO make this an entered username
-                                )
-            api = PushshiftAPI(praw=reddit)
+            api = PushshiftAPI(praw=self.get_praw())
         else:
             api = PushshiftAPI()
 
@@ -53,6 +49,10 @@ class CallPmaw:
         print('Organizing collected data...')
 
         df = pd.DataFrame([comment for comment in comments])
+        if df.empty:
+            print('WARNING: No data returned. Pushshift may be offline, or your search filters may be too specific.')
+            return None
+
         if 'created_datetime' in fields:
             df['created_datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
         if 'retrieved_datetime' in fields and search_type == SearchType.PMAW.value:
@@ -64,7 +64,7 @@ class CallPmaw:
 
         return df
 
-    def get_submission_df(dict, search_type: SearchType):
+    def get_submission_df(self, dict, search_type: SearchType):
         print("\nRunning...")
 
         q = dict['q']
@@ -93,15 +93,9 @@ class CallPmaw:
             fields.append('retrieved_on')
 
         if search_type == SearchType.PRAW.value:
-            username = dict['username']
             fields.append('id')
 
-            reddit = praw.Reddit(
-                                client_id='zoRBoAT4ZIBxyoY6iq7GNg',
-                                client_secret=None,
-                                user_agent=f'python: PMAW request enrichment (by u/'+username+')' #TODO make this an entered username
-                                )
-            api = PushshiftAPI(praw=reddit)
+            api = PushshiftAPI(praw=self.get_praw())
         else:
             api = PushshiftAPI()
 
@@ -117,6 +111,10 @@ class CallPmaw:
         print('Organizing collected data...')
 
         df = pd.DataFrame([s for s in submissions])
+        if df.empty:
+            print('WARNING: No data returned. Pushshift may be offline, or your search filters may be too specific.')
+            return None
+
         if 'created_datetime' in fields:
             df['created_datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
         if 'retrieved_datetime' in fields and search_type == SearchType.PMAW.value:
@@ -129,26 +127,39 @@ class CallPmaw:
         return df
 
 
-    def save_comment_file(dict, file, file_type:FileType, search_type:SearchType):
-        df = CallPmaw.get_comment_df(dict, search_type)
-        file = CallPmaw.add_file_type(file, file_type)
-        CallPmaw.save_df_to_file(df, file, file_type)
-        print('Comment data saved to ' + file)
+    def save_comment_file(self, dict, file, file_type:FileType, search_type:SearchType):
+        df = self.get_comment_df(dict, search_type)
+        if not df.empty:
+            file = CallPmaw.add_file_type(file, file_type)
+            error = CallPmaw.save_df_to_file(df, file, file_type)
+            if not error:
+                print('Comment data saved to ' + file)
         
-    def save_submission_file(dict, file, file_type:FileType, search_type:SearchType):
-        df = CallPmaw.get_submission_df(dict, search_type)
-        file = CallPmaw.add_file_type(file, file_type)
-        CallPmaw.save_df_to_file(df, file, file_type)
-        print('Submission data saved to ' + file)
+    def save_submission_file(self, dict, file, file_type:FileType, search_type:SearchType):
+        df = self.get_submission_df(dict, search_type)
+        if not df.empty:
+            file = CallPmaw.add_file_type(file, file_type)
+            error = CallPmaw.save_df_to_file(df, file, file_type)
+            if not error:
+                print('Submission data saved to ' + file)
 
     def save_df_to_file(df, file, file_type:FileType):
         print('Saving organized data...')
         if file_type == FileType.CSV.value:
-            df.to_csv(file)
+            try:
+                df.to_csv(file)
+            except:
+                print('ERROR: Unable to save to file. Check if file is open in another program.')
+                return -1
         elif file_type == FileType.XLSX.value:
-            df.to_excel(file, index=False, engine='xlsxwriter')
+            try:
+                df.to_excel(file, index=False, engine='xlsxwriter')
+            except:
+                print('ERROR: Unable to save to file. Check if file is open in another program.')
+                return -1
         else:
             raise ValueError('file_type was not an accepted value. Value was: '+ file_type)
+        return None
 
 
     def remove_extra_fields(df: pd.DataFrame, fields: list):
@@ -167,6 +178,41 @@ class CallPmaw:
             return df[safe_cols]
 
 
+    def get_praw(self):
+        if self.praw is None:
+            user_agent = 'User-Agent: '+platform.system()+': Data Collection for Reddit (by u/'+secret_constants.USERNAME+')'
+            reddit = praw.Reddit(
+                        client_id=secret_constants.CLIENT_ID,
+                        client_secret=None,
+                        user_agent=user_agent,
+                        check_for_updates=False,
+                        comment_kind="t1",
+                        message_kind="t4",
+                        redditor_kind="t2",
+                        submission_kind="t3",
+                        subreddit_kind="t5",
+                        trophy_kind="t6",
+                        oauth_url="https://oauth.reddit.com",
+                        reddit_url="https://www.reddit.com",
+                        short_url="https://redd.it",
+                        ratelimit_seconds=5,
+                        timeout=16
+                        )
+            reddit._read_only_core = prawcore.session(
+                                                    auth.DeviceIDAuthorizer(
+                                                        authenticator=auth.UntrustedAuthenticator(
+                                                            requestor=requestor.Requestor(
+                                                                user_agent=user_agent,
+                                                                timeout=16
+                                                            ), 
+                                                            client_id=secret_constants.CLIENT_ID, 
+                                                            redirect_uri='http://localhost:8080'), 
+                                                        device_id=AppInfo.get_device_id()
+                                                        )
+                                                    )
+            self.praw = reddit
+
+        return self.praw
 
     def get_csv_cols(file):
         with open(file, encoding="utf-8") as f:

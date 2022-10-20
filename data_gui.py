@@ -130,7 +130,7 @@ class DataEntry(tk.Frame):
     
     def get_save_file(self, datafile: str):
         file_name_index = datafile.rfind('/')
-        savefile = datafile[0 : file_name_index+1] + self.datatype.value +' for '+ str(self.get_entries())[1:-1] +' in '+datafile[file_name_index+1 :]
+        savefile = datafile[0 : file_name_index+1] + self.datatype.value +' of '+ str(self.get_entries())[1:-1] +' in '+datafile[file_name_index+1 :]
         savefile = CallPmaw.add_file_type(savefile, ExportFileType.CSV.value)
         return savefile
 
