@@ -8,6 +8,7 @@ from tkwidgets.labeldatetime import *
 from tkwidgets.labelentry import *
 from tkwidgets.labelentrylist import *
 from tkwidgets.labelrange import *
+from tkwidgets.labeltime import *
 from tkwidgets.radiolist import *
 from tkwidgets.scrolledframe import *
-from tkwidgets.labeltime import *
+from tkwidgets.tooltip import *

@@ -57,6 +57,12 @@ class PushshiftAPI(PushshiftAPIBase):
         """
         return self._search(kind='comment', **kwargs)
 
+    def get_num_comments(self, **kwargs):
+        """
+        Returns an integer referring to the number of commments available
+        """
+        return self.get_total_avail(kind='comment', **kwargs)
+
     def search_submissions(self, **kwargs):
         """
         Method for searching submissions, returns an array of submissions

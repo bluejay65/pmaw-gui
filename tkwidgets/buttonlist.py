@@ -7,7 +7,7 @@ import tkwidgets as tkw
 class ButtonList(ttk.Labelframe):
 
     # Creates the checkbuttons from listvariable and adds them to the frame
-    def __init__(self, parent, listvariable: list, height:int = None, title: str = None, command: str = None, scrollbar: bool = False, relief=tk.RAISED, **kwargs):
+    def __init__(self, parent, listvariable: list, height:int = None, title: str = None, command: str = None, scrollbar: bool = False, relief=tk.RAISED, tooltip_dict: dict = {}, **kwargs):
         ttk.Labelframe.__init__(self, parent, text=title, **kwargs)
 
         self.command = command
@@ -22,16 +22,20 @@ class ButtonList(ttk.Labelframe):
 
         self.frame.grid(row=0, column=0)
         self.buttons = {}
+        self.tooltips = {}
 
-        self.add_items(listvariable)
+        self.add_items(listvariable, tooltip_dict)
 
 
-    def add_items(self, items: list):
+    def add_items(self, items: list, tooltips: dict):
         for i in items:
             btn = tk.Button(self.edit_frame, text=i, anchor="w", relief=self.relief)
 
             if self.command:
                 btn['command'] = (lambda parent=self.parent, command=self.command, button=btn: self.run_command(parent, command, button))
+
+            if tooltips != {}:
+                self.tooltips[i] = tkw.ToolTip(btn, tooltips[i])
 
             btn.grid(row=len(self.buttons), column=0, sticky='w')
             self.buttons[i] = btn

@@ -32,7 +32,7 @@ class TimeEntry(tk.Frame):
     def __init__(self, parent, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
 
-        self.time_entry = SpinTimePickerModern(self)
+        self.time_entry = SpinTimePickerModern(self, orient=constants.HORIZONTAL)
         self.time_entry.addAll(constants.HOURS12)
         self.time_entry.configureAll(bg="#cdcdcd", width=4, hoverbg="#a6a6a6", clickedbg="#606060", clickedcolor="#ffffff")
         self.time_entry.configure_separator(bg="#cdcdcd")

@@ -1,4 +1,4 @@
-from email import message
+from json import tool
 import sys
 import tkinter as tk
 from tkinter import filedialog
@@ -7,6 +7,7 @@ from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
 from base_gui import BaseGUI
 from enum import Enum
 from constants import ExportFileType, SearchType
+import textwrap
 import constants
 
 
@@ -43,6 +44,15 @@ class SubmissionGUI(BaseGUI):
                     'Posted before': EntryType.DATETIME
     }
 
+    tooltip_fields = {
+                    'Search Title and Body': textwrap.fill('Returns submissions that include the term(s) in the filter in the submission’s title or body. To search for multiple terms that all must be included in the same submission, use commas to delineate them.', constants.TEXT_WRAP),
+                    'Search Title': textwrap.fill('Returns submissions that include the term(s) in the filter in the submission’s title. To search for multiple terms that all must be included in the same title, use commas to delineate them.', constants.TEXT_WRAP),
+                    'Search Body': textwrap.fill('Returns submissions that include the term(s) in the filter in the submission’s body. To search for multiple terms that all must be included in the body, use commas to delineate them.', constants.TEXT_WRAP),
+                    'Max Results': textwrap.fill('Sets the maximum amount of results that DCfR will try to return. If there are fewer results available than the number you input, it will return every result it can.', constants.TEXT_WRAP),
+                    'Author': textwrap.fill('Returns submissions posted by the author in the filter.', constants.TEXT_WRAP),
+                    'Subreddit': textwrap.fill('Returns submissions from the subreddit(s) in the filter. To search in multiple subreddits, use commas to delineate them.', constants.TEXT_WRAP)
+    }
+
     api_fields = {
                     'Search Title and Body': 'q',
                     'Exclude Search Term': 'q:not',
@@ -70,7 +80,7 @@ class SubmissionGUI(BaseGUI):
         self.pmaw = pmaw
         self.root = root
 
-        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters')
+        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields)
         self.label_entries.grid(row=0, column=0, rowspan=2)
         self.label_entries.update()
 
@@ -80,7 +90,6 @@ class SubmissionGUI(BaseGUI):
         self.reset_return_fields()
 
         self.file_type_button = Radiolist(self, options=[e.value for e in ExportFileType], title='Save as File Type')
-        #self.file_type_button.grid(row=1, column=1)
 
         self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using')
         self.search_type_button.grid(row=1, column=1)

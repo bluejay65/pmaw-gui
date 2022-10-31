@@ -6,7 +6,7 @@ import tkwidgets as tkw
 
 # A frame containing a list of LabelEntries
 class LabelEntryList(ttk.LabelFrame):
-    def __init__(self, parent, dictvariable: dict, title: str, **kwargs):
+    def __init__(self, parent, dictvariable: dict, title: str, tooltip_dict: dict = {}, **kwargs):
         ttk.LabelFrame.__init__(self, parent, text=title, **kwargs)
         self.parent = parent
 
@@ -18,6 +18,9 @@ class LabelEntryList(ttk.LabelFrame):
             if value == tkw.EntryType.ENTRY:
                 widget = tkw.LabelEntry(self, row=row, column=column, text=key)
                 self.label_entry_dict[key] = widget
+
+                if(key in tooltip_dict):
+                    widget.set_tooltip(tooltip_dict[key])
 
                 row += 1
 

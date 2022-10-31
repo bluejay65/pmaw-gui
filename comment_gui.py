@@ -1,9 +1,11 @@
+from cgitb import text
 import sys
+import textwrap
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
-from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
 from base_gui import BaseGUI
+from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
 from constants import ExportFileType, SearchType
 import constants
 
@@ -17,6 +19,13 @@ class CommentGUI(BaseGUI):
                     'Subreddit': EntryType.ENTRY,
                     'Posted After': EntryType.DATETIME,
                     'Posted Before': EntryType.DATETIME
+    }
+
+    tooltip_fields = {
+                    'Search Term': textwrap.fill('Returns comments that include the term(s) in the filter. To search for multiple terms that all must be included in the same comment, use commas to delineate them.', constants.TEXT_WRAP),
+                    'Max Results': textwrap.fill('Sets the maximum amount of results that DCfR will try to return. If there are fewer results available than the number you input, it will return every result it can.', constants.TEXT_WRAP),
+                    'Author': textwrap.fill('Returns comments posted by the author in the filter', constants.TEXT_WRAP),
+                    'Subreddit': textwrap.fill('Returns comments from the subreddit(s) in the filter. To search in multiple subreddits, use commas to delineate them.', constants.TEXT_WRAP)
     }
 
     api_fields = {
@@ -33,7 +42,7 @@ class CommentGUI(BaseGUI):
         self.pmaw = pmaw
         self.root = root
 
-        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters')
+        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields)
         self.label_entries.grid(row=0, column=0, rowspan=2)
 
         self.return_entries = Checklist(self, constants.COMMENT_RETURN_FIELDS, title='Data to Return', height = 200, scrollbar=True)

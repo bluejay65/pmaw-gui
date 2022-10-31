@@ -1,3 +1,4 @@
+from msilib.schema import ComboBox
 import tkinter as tk
 import calendar
 from tkinter import ttk
@@ -33,15 +34,15 @@ class DateEntry(tk.Frame):
     def __init__(self, parent, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
 
-        month_list = []
+        self.month_list = []
         for i in range(1, 13):
-            month_list.append(calendar.month_name[i])
+            self.month_list.append(calendar.month_name[i])
         
         self.month_str = tk.StringVar()
         self.day_str = tk.StringVar()
         self.year_str = tk.StringVar()
 
-        self.month_combobox = ttk.Combobox(self, textvariable=self.month_str, values=month_list, state='readonly', width=10)
+        self.month_combobox = ttk.Combobox(self, textvariable=self.month_str, values=self.month_list, state='readonly', width=10)
         self.month_combobox.bind('<<ComboboxSelected>>', self.month_selected)
 
         self.day_combobox = ttk.Combobox(self, textvariable=self.day_str, state='readonly', width=3)
@@ -65,22 +66,42 @@ class DateEntry(tk.Frame):
 
     # Sets the correct number of days when a month is selected
     def month_selected(self, event):
-        num_days = 0
         if self.month_str.get() == 'January' or self.month_str.get() == 'March' or self.month_str.get() == 'May' or self.month_str.get() == 'July' or self.month_str.get() == 'August' or self.month_str.get() == 'October' or self.month_str.get() == 'December':
-            self.set_days(31)
+            self.set_num_days(31)
         elif self.month_str.get() == 'April' or self.month_str.get() == 'June' or self.month_str.get() == 'September' or self.month_str.get() == 'November':
-            self.set_days(30)
+            self.set_num_days(30)
         else:
-            self.set_days(self.get_february_days())
+            self.set_num_days(self.get_february_days())
+
+        if self.year_str.get() == '':
+            self.set_year(0)
+        if self.day_str.get() == '':
+            self.set_day(1)
 
 
     # Sets the correct number of days when a year is selected
     def year_selected(self, event):
         if self.month_str.get() == 'February':
-            self.set_days(self.get_february_days())
+            self.set_num_days(self.get_february_days())
+
+        if self.month_str.get() == '':
+            self.set_month(0)
+        if self.day_str.get() == '':
+            self.set_day(1)
+
+    def set_day(self, day: int):
+        self.day_str.set(day)
+
+    def set_month(self, month_num: int):
+        self.month_str.set(self.month_list[month_num])
+        self.month_selected(None)
+
+    def set_year(self, year_num: int):
+        self.year_str.set(self.valid_years[0])
+        self.year_selected(None)
 
     # Changes the number of days shown
-    def set_days(self, num_days):
+    def set_num_days(self, num_days):
         days_list = ['']
         for i in range(num_days):
             days_list.append(i+1)

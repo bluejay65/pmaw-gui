@@ -1,8 +1,7 @@
-from sqlite3 import Row
 from pmaw import PushshiftAPI
 import pandas as pd
 import platform
-from constants import FileType, SearchType, VERSION
+from constants import FileType, SearchType, VERSION, APP_NAME
 from app_info import AppInfo
 import praw, prawcore
 from prawcore import auth, requestor
@@ -50,8 +49,8 @@ class CallPmaw:
 
         df = pd.DataFrame([comment for comment in comments])
         if df.empty:
-            print('WARNING: No data returned. Pushshift may be offline, or your search filters may be too specific.')
-            return None
+            print('ERROR: No data returned. Pushshift may be offline, or your search filters may be too specific.')
+            return df
 
         if 'created_datetime' in fields:
             df['created_datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
@@ -112,8 +111,8 @@ class CallPmaw:
 
         df = pd.DataFrame([s for s in submissions])
         if df.empty:
-            print('WARNING: No data returned. Pushshift may be offline, or your search filters may be too specific.')
-            return None
+            print('ERROR: No data returned. Pushshift may be offline, or your search filters may be too specific.')
+            return df
 
         if 'created_datetime' in fields:
             df['created_datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
@@ -180,7 +179,7 @@ class CallPmaw:
 
     def get_praw(self):
         if self.praw is None:
-            user_agent = 'User-Agent: '+platform.system()+': Data Collection for Reddit (by u/'+secret_constants.USERNAME+')'
+            user_agent = 'User-Agent: '+platform.system()+': '+APP_NAME+' v'+VERSION+'(by u/'+secret_constants.USERNAME+')'
             reddit = praw.Reddit(
                         client_id=secret_constants.CLIENT_ID,
                         client_secret=None,

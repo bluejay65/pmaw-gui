@@ -1,7 +1,8 @@
 from enum import Enum
 
-VERSION = '0.2.2'
+VERSION = '0.2.3'
 APP_NAME = 'Dataset Collector for Reddit'
+GUIDE_URL = 'https://docs.google.com/document/d/1ED5SsBsmFxjePdBnY-1NYSxkkXIOgKRVz4O0BIWQDFc/edit?usp=sharing'
 
 COMMENT_WIDTH = 550
 COMMENT_HEIGHT = 370
@@ -11,6 +12,9 @@ SUBMISSION_HEIGHT = 620
 
 DATA_WIDTH = 310
 DATA_HEIGHT = 350
+
+NOTEBOOK_WRAP = 15
+TEXT_WRAP = 40
 
 class FileType(Enum):
     CSV = '.csv'

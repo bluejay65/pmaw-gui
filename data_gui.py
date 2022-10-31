@@ -1,15 +1,22 @@
-from ast import Call
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from tkwidgets import Checklist, Radiolist, ButtonList
+from tkwidgets import Checklist, ButtonList
 from base_gui import BaseGUI
 from constants import FileType, ExportFileType, DataType
 from pmaw_data import Data
 from search_pmaw import CallPmaw
 import pandas as pd
+import textwrap
+import constants
 
 
 class DataGUI(BaseGUI): #TODO get way to count total comments returned
+
+    tooltip_fields = {
+                    DataType.AGGREGATE_SUM.value: textwrap.fill('Returns the sum of all numeric columns for every distinct member of the groups chosen', constants.TEXT_WRAP),
+                    DataType.FREQUENCY.value: textwrap.fill('Returns the number of times every distinct member of the groups chosen appears in the data set', constants.TEXT_WRAP),
+                    DataType.GINI_COEFFICIENCT.value: textwrap.fill('Returns a value representing the inequality in data. A value of 0 means all values are the same, and a value of 1 means every value is different', constants.TEXT_WRAP),
+    }
 
     def __init__(self, parent, root, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
@@ -26,7 +33,7 @@ class DataGUI(BaseGUI): #TODO get way to count total comments returned
 
         self.on_data_selection(next(iter(self.data_entries)))
 
-        self.datatype_selection = ButtonList(self, title='Data Functions', listvariable=[d.value for d in DataType], command='on_data_selection', relief=tk.RIDGE)
+        self.datatype_selection = ButtonList(self, title='Data Functions', listvariable=[d.value for d in DataType], command='on_data_selection', relief=tk.RIDGE, tooltip_dict=self.tooltip_fields)
         self.datatype_selection.grid(row=0, column=0)
 
         self.file_selected = ''

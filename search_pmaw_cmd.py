@@ -1,4 +1,5 @@
-import sys, argparse, search_pmaw
+import argparse 
+import search_pmaw
 
 
 parser = argparse.ArgumentParser()

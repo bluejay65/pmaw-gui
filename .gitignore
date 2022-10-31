@@ -1,6 +1,8 @@
 # My additions
 Scripts/
 datasets/
+missing comment data/
+missing submission data/
 pyvenv.cfg
 greenlet.h
 secret_constants.py

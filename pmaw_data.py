@@ -1,9 +1,7 @@
-from msilib.schema import File
 import pandas as pd
 import numpy as np
 from search_pmaw import CallPmaw
 from constants import FileType
-import random
 
 
 class Data():
