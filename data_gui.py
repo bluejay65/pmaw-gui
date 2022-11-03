@@ -3,7 +3,7 @@ from tkinter import filedialog, messagebox
 from tkwidgets import Checklist, ButtonList
 from base_gui import BaseGUI
 from constants import FileType, ExportFileType, DataType
-from pmaw_data import Data
+from dcfr_data import Data
 from search_pmaw import CallPmaw
 import pandas as pd
 import textwrap
@@ -18,9 +18,10 @@ class DataGUI(BaseGUI): #TODO get way to count total comments returned
                     DataType.GINI_COEFFICIENCT.value: textwrap.fill('Returns a value representing the inequality in data. A value of 0 means all values are the same, and a value of 1 means every value is different', constants.TEXT_WRAP),
     }
 
-    def __init__(self, parent, root, **kwargs):
+    def __init__(self, parent, root, executor, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
         self.root = root
+        self.executor = executor
         self.data_entries = {}
 
         self.data_entries[DataType.AGGREGATE_SUM.value] = DataEntry(self, datatype=DataType.AGGREGATE_SUM, function=Data.save_sum_fields, title='Get aggregate sum grouped by')
@@ -57,10 +58,6 @@ class DataGUI(BaseGUI): #TODO get way to count total comments returned
 
 
     def run(self):
-        entries = self.current_data_entry.get_entries()
-
-        self.root.withdraw()
-
         if self.datafile.endswith(FileType.CSV.value):
             df = pd.read_csv(self.datafile, sep=',', usecols=CallPmaw.get_csv_cols(self.datafile))
         elif self.datafile.endswith(FileType.XLSX.value):
@@ -69,9 +66,8 @@ class DataGUI(BaseGUI): #TODO get way to count total comments returned
             messagebox.showerror('File Selected is not a recognized file type. Must be .csv or .xlsx')
             return
         
-        self.current_data_entry.save_data(df, self.datafile)
+        self.executor.submit(self.current_data_entry.save_data, df, self.datafile)
 
-        self.root.deiconify()
 
 
     def open_file(self):

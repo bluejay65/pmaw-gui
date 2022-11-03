@@ -16,6 +16,13 @@ DATA_HEIGHT = 350
 NOTEBOOK_WRAP = 15
 TEXT_WRAP = 40
 
+class NotebookPage(Enum):
+    COMMENT_PAGE = 0
+    SUBMISSION_PAGE = 1
+    DATA_PAGE = 2
+    OUTPUT_PAGE = 3
+    GUIDE_PAGE = 4
+
 class FileType(Enum):
     CSV = '.csv'
     XLSX = '.xlsx'

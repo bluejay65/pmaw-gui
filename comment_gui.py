@@ -6,7 +6,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 from base_gui import BaseGUI
 from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
-from constants import ExportFileType, SearchType
+from constants import DataType, ExportFileType, SearchType
 import constants
 
 
@@ -14,12 +14,14 @@ class CommentGUI(BaseGUI):
 
     search_fields = {
                     'Search Term': EntryType.ENTRY,
-                    'Max Results': EntryType.ENTRY,
+                    'Max Results': EntryType.NUMBER,
                     'Author': EntryType.ENTRY,
                     'Subreddit': EntryType.ENTRY,
                     'Posted After': EntryType.DATETIME,
                     'Posted Before': EntryType.DATETIME
     }
+
+    archived_only_return_fields = ['retrieved_datetime', 'retrieved_utc']
 
     tooltip_fields = {
                     'Search Term': textwrap.fill('Returns comments that include the term(s) in the filter. To search for multiple terms that all must be included in the same comment, use commas to delineate them.', constants.TEXT_WRAP),
@@ -37,10 +39,12 @@ class CommentGUI(BaseGUI):
                     'Posted Before': 'before'
     }
 
-    def __init__(self, pmaw, parent, root, **kwargs):
+    def __init__(self, pmaw, parent, root, executor, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
         self.pmaw = pmaw
         self.root = root
+        self.parent = parent
+        self.executor = executor
 
         self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields)
         self.label_entries.grid(row=0, column=0, rowspan=2)
@@ -53,9 +57,10 @@ class CommentGUI(BaseGUI):
         self.file_type_button = Radiolist(self, options=[e.value for e in ExportFileType], title='Save as File Type')
         #self.file_type_button.grid(row=1, column=1)
 
-        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using')
+        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using', command='on_search_type_selection')
         self.search_type_button.grid(row=1, column=1)
-        self.search_type_button.select(SearchType.PRAW.value)
+        self.search_type_button.select(SearchType.PMAW.value)
+        self.on_search_type_selection(SearchType.PMAW.value)
 
         self.file_selected = ''
         self.button_frame = tk.Frame(self)
@@ -76,12 +81,15 @@ class CommentGUI(BaseGUI):
 
     def run(self):
         entry_dict = self.get_entries()
+        if entry_dict['before'] is not None and entry_dict['after'] is not None:
+            if entry_dict['before'] < entry_dict['after'] :
+                messagebox.showerror(message='\'Posted Before\' is set to before \'Posted After\'. No data will be available.', title='Impossible Search Filters')
+                return
         if entry_dict['q'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
-        self.root.withdraw()
-        self.pmaw.save_comment_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
-        self.root.deiconify()
+        self.parent.select(constants.NotebookPage.OUTPUT_PAGE.value)
+        self.executor.submit(self.pmaw.save_comment_file, entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
 
     
     def select_file(self):
@@ -94,6 +102,11 @@ class CommentGUI(BaseGUI):
             self.run_button.grid_forget()
             self.file_button.grid(row=0, column=0)
 
+    def on_search_type_selection(self, search_type_value):
+        if search_type_value == SearchType.PMAW.value: # archived
+            self.return_entries.show_all_items()
+        elif search_type_value == SearchType.PRAW.value: # reddit
+            self.return_entries.hide_items(self.archived_only_return_fields)
 
     def reset_return_fields(self):
         self.return_entries.check_items([

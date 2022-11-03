@@ -29,7 +29,7 @@ class SubmissionGUI(BaseGUI):
                     #'Exclude Title Text': EntryType.ENTRY,
                     'Search Body': EntryType.ENTRY,
                     #'Exclude Body Text': EntryType.ENTRY,
-                    'Max Results': EntryType.ENTRY,
+                    'Max Results': EntryType.NUMBER,
                     'Author': EntryType.ENTRY,
                     'Subreddit': EntryType.ENTRY,
                     #'Score': EntryType.RANGE,
@@ -53,6 +53,8 @@ class SubmissionGUI(BaseGUI):
                     'Subreddit': textwrap.fill('Returns submissions from the subreddit(s) in the filter. To search in multiple subreddits, use commas to delineate them.', constants.TEXT_WRAP)
     }
 
+    archived_only_return_fields = ['full_link', 'retrieved_datetime', 'retrieved_on']
+
     api_fields = {
                     'Search Title and Body': 'q',
                     'Exclude Search Term': 'q:not',
@@ -75,10 +77,11 @@ class SubmissionGUI(BaseGUI):
                     'Posted before': 'before'
     }
 
-    def __init__(self, pmaw, parent, root, **kwargs):
+    def __init__(self, pmaw, parent, root, executor, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
         self.pmaw = pmaw
         self.root = root
+        self.executor = executor
 
         self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields)
         self.label_entries.grid(row=0, column=0, rowspan=2)
@@ -91,9 +94,9 @@ class SubmissionGUI(BaseGUI):
 
         self.file_type_button = Radiolist(self, options=[e.value for e in ExportFileType], title='Save as File Type')
 
-        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using')
+        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using', command='on_search_type_selection')
         self.search_type_button.grid(row=1, column=1)
-        self.search_type_button.select(SearchType.PRAW.value)
+        self.search_type_button.select(SearchType.PMAW.value)
 
         self.file_selected = ''
         self.button_frame = tk.Frame(self)
@@ -114,13 +117,16 @@ class SubmissionGUI(BaseGUI):
 
     def run(self):
         entry_dict = self.get_entries()
+        if entry_dict['before'] is not None and entry_dict['after'] is not None:
+            if entry_dict['before'] < entry_dict['after'] :
+                messagebox.showerror(message='\'Posted Before\' is set to before \'Posted After\'. No data will be available.', title='Impossible Search Filters')
+                return
         if entry_dict['q'] is None and entry_dict['title'] is None and entry_dict['selftext'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
-        self.root.withdraw()
+        self.root.iconify()
+        #self.executor.submit(self.pmaw.save_submission_file, entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
         self.pmaw.save_submission_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
-        self.root.deiconify()
-
     
     def select_file(self):
         self.file_selected = filedialog.asksaveasfilename()
@@ -131,6 +137,12 @@ class SubmissionGUI(BaseGUI):
         else:
             self.run_button.grid_forget()
             self.file_button.grid(row=0, column=0)
+
+    def on_search_type_selection(self, search_type_value):
+        if search_type_value == SearchType.PMAW.value: # archived
+            self.return_entries.show_all_items()
+        elif search_type_value == SearchType.PRAW.value: # reddit
+            self.return_entries.hide_items(self.archived_only_return_fields)
 
 
     def reset_return_fields(self):

@@ -8,3 +8,4 @@ class EntryType(Enum):
     DROPDOWN = auto()
     RANGE = auto()
     TIME = auto()
+    NUMBER = auto()

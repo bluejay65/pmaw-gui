@@ -56,6 +56,15 @@ class LabelEntryList(ttk.LabelFrame):
 
                 row += 1
 
+            elif value == tkw.EntryType.NUMBER:
+                widget = tkw.LabelEntry(self, row=row, column=column, text=key, number=True)
+                self.label_entry_dict[key] = widget
+
+                if(key in tooltip_dict):
+                    widget.set_tooltip(tooltip_dict[key])
+
+                row += 1
+
             #else:
                 #raise Exception('value in dictionary is not a recognized type. The value was: {}'.format(value))
 

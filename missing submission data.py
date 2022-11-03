@@ -31,11 +31,11 @@ def date_time_to_epoch(date: datetime.date, time: datetime.time):
     struct_time = t.struct_time([date.year, date.month, date.day, time.hour, time.minute, 0, 0, 1, -1])
     return int(t.mktime(struct_time))
 
-start_date = date_time_to_epoch(datetime.date(2011, 3, 27), datetime.time(0, 0))
+start_date = date_time_to_epoch(datetime.date(2012, 12, 16), datetime.time(0, 0))
 date_offset = start_date % seconds_per_day
 
 for day in range(start_date,
-    date_time_to_epoch(datetime.date.today(), datetime.time(0, 0)),
+    date_time_to_epoch(datetime.date(2014, 1, 9), datetime.time(0, 0)),
     seconds_per_day):
     t.sleep(5)
 

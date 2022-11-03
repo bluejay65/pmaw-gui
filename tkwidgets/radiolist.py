@@ -6,10 +6,11 @@ from tkinter import ttk
 class Radiolist(ttk.Labelframe):
 
     # Creates the checkbuttons from listvariable and adds them to the frame
-    def __init__(self, parent, options: list, title: str = None, **kwargs):
+    def __init__(self, parent, options: list, title: str = None, command: str = None, **kwargs):
         ttk.Labelframe.__init__(self, parent, text=title, **kwargs)
 
         self.parent = parent
+        self.command = command
 
         self.frame = self.edit_frame = tk.Frame(self)
 
@@ -20,6 +21,9 @@ class Radiolist(ttk.Labelframe):
 
         for option in options:
             rb = tk.Radiobutton(self.edit_frame, variable=self.choice, text=option, value=option, anchor="w")
+
+            if self.command:
+                rb['command'] = (lambda parent=self.parent, command=self.command, button=rb: self.run_command(parent, command, button))
 
             rb.grid(row=len(self.radiobuttons), column=0, sticky='w')
             self.radiobuttons[option] = rb
@@ -51,3 +55,8 @@ class Radiolist(ttk.Labelframe):
     def select(self, item:str):
         if item in self.radiobuttons.keys():
             self.choice.set(item)
+
+    def run_command(self, parent, command, button):
+        button.focus_set()
+        func = getattr(parent, command)
+        func(button['text'])

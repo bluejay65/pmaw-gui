@@ -22,6 +22,7 @@ class Checklist(ttk.Labelframe):
         self.frame.grid(row=0, column=0)
         self.vars = []
         self.checkbuttons = {}
+        self.hidden_checkbuttons = {}
 
         for choice in listvariable:
             var = tk.StringVar(value=choice)
@@ -35,15 +36,13 @@ class Checklist(ttk.Labelframe):
             cb.grid(row=len(self.checkbuttons), column=0, sticky='w')
             self.checkbuttons[choice] = cb
 
-        
-
 
     # Returns a list of the values of the checked buttons
     def get_checked_items(self):
         values = []
         for var in self.vars:
             value =  var.get()
-            if value:
+            if value and value not in self.hidden_checkbuttons:
                 values.append(value)
         return values
 
@@ -70,6 +69,17 @@ class Checklist(ttk.Labelframe):
         for item in self.checkbuttons.keys():
             self.checkbuttons[item].grid_forget()
         self.checkbuttons = {}
+
+    def hide_items(self, items: list):
+        for item in items:
+            if item in self.checkbuttons.keys():
+                self.checkbuttons[item].grid_remove()
+                self.hidden_checkbuttons[item] = self.checkbuttons[item]
+
+    def show_all_items(self):
+        for item in self.hidden_checkbuttons.keys():
+            self.hidden_checkbuttons[item].grid()
+        self.hidden_checkbuttons = {}
 
     # Selects a button
     def select(self, item:str):
