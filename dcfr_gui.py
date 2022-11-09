@@ -5,6 +5,8 @@ import webbrowser
 from tkinter import ttk
 from search_pmaw import CallPmaw
 import sys
+import signal
+from threading import Event
 from concurrent.futures import ThreadPoolExecutor
 
 sys.path.append('base')
@@ -12,44 +14,45 @@ sys.path.append('base')
 
 class DcfrGUI():
     def __init__(self) -> None:
-        #with ThreadPoolExecutor(max_workers=10) as executor:
-        executor = None
-        self.root = tk.Tk()
-        self.root.title(constants.APP_NAME+" "+constants.VERSION)
-        self.root.columnconfigure(0, weight=100)
-        self.root.rowconfigure(0, weight=100)
-        self.root.resizable(False, False)
+        self.exit = Event()
+        self.setup_sigs()
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            self.root = tk.Tk()
+            self.root.title(constants.APP_NAME+" "+constants.VERSION)
+            self.root.columnconfigure(0, weight=100)
+            self.root.rowconfigure(0, weight=100)
+            self.root.resizable(False, False)
 
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.grid(sticky='news')
-        self.page = 1
+            self.notebook = ttk.Notebook(self.root)
+            self.notebook.grid(sticky='news')
+            self.page = 1
 
-        self.output_page = output_gui.OutputGUI(self.notebook, self.root)
-        self.pmaw = CallPmaw(self.output_page)
+            self.output_page = output_gui.OutputGUI(self.notebook, self.root)
+            self.pmaw = CallPmaw(output=self.output_page, executor=executor, main_thread=self)
 
-        self.comment_page = comment_gui.CommentGUI(self.pmaw, self.notebook, self.root, executor=executor)
-        text = 'Comments'
-        self.notebook.add(self.comment_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
+            self.comment_page = comment_gui.CommentGUI(self.pmaw, self.notebook, self.root, executor=executor)
+            text = 'Comments'
+            self.notebook.add(self.comment_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
 
-        self.submission_page = submission_gui.SubmissionGUI(self.pmaw, self.notebook, self.root, executor=executor)
-        text = 'Submissions'
-        self.notebook.add(self.submission_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
+            self.submission_page = submission_gui.SubmissionGUI(self.pmaw, self.notebook, self.root, executor=executor)
+            text = 'Submissions'
+            self.notebook.add(self.submission_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
 
-        self.data_page = data_gui.DataGUI(self.notebook, self.root, executor=executor)
-        text = 'Data Analysis'
-        self.notebook.add(self.data_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
+            self.data_page = data_gui.DataGUI(self.notebook, self.root, executor=executor)
+            text = 'Data Analysis'
+            self.notebook.add(self.data_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
 
-        text = 'Output'
-        self.notebook.add(self.output_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
+            text = 'Output'
+            self.notebook.add(self.output_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
 
-        label = tk.Label()
-        text = 'Guide'
-        self.notebook.add(label, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
+            label = tk.Label()
+            text = 'Guide'
+            self.notebook.add(label, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
 
-        self.notebook.bind('<<NotebookTabChanged>>', self.change_window)
-        self.change_window()
+            self.notebook.bind('<<NotebookTabChanged>>', self.change_window)
+            self.change_window()
 
-        self.root.mainloop()
+            self.root.mainloop()
 
 
     def change_window(self, event=None):
@@ -68,15 +71,31 @@ class DcfrGUI():
             self.notebook.select(last_page)
             webbrowser.open_new_tab(constants.GUIDE_URL)
 
+    def setup_sigs(self):
+        try:
+            getattr(signal, 'SIGHUP')
+            sigs = ('TERM', 'HUP', 'INT')
+        except AttributeError:
+            sigs = ('TERM', 'INT')
+
+        for sig in sigs:
+            signal.signal(getattr(signal, 'SIG'+sig), self.set_exit)
+
+    def set_exit(self, *args):
+        self.exit.set()
+
 
 gui = DcfrGUI()
 
 
+#TODO get signal working
+#TODO error when gini (check panek email)
 #TODO search filters too specific versus no data available in time frame
 #TODO explain results remaining
-#TODO fix data errors, (not using error with gini)
 #TODO add select all button for return fields
 #TODO work with different OS (test)
 #TODO let user clear date
 #TODO save recent searches and let them fill them back in
 #TODO visualization
+
+#reddit data collection and analysis tool (redcat)

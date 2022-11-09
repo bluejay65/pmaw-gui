@@ -93,6 +93,16 @@ class Request:
         for sig in sigs:
             signal.signal(getattr(signal, 'SIG'+sig), self._exit)
 
+    def check_sigs_thread(self):
+        try:
+            getattr(signal, 'SIGHUP')
+            sigs = ('TERM', 'HUP', 'INT')
+        except AttributeError:
+            sigs = ('TERM', 'INT')
+
+        for sig in sigs:
+            self.exit.set()
+
     def _enrich_data(self):
         # create batch of fullnames up to 100
         fullnames = []

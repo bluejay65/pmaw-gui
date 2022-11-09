@@ -140,7 +140,7 @@ class PeriodLabel(tkinter.Frame):
         self._am.bind("<Button-1>", self.changePeriod)
         self._pm.bind("<Button-1>", self.changePeriod)
 
-        orient = "left"
+        orient = "top" if orient == constants.VERTICAL else "left"
 
         self._am.pack(expand=True, fill='both', side=orient)
         self._pm.pack(expand=True, fill='both', side=orient)
@@ -157,13 +157,6 @@ class PeriodLabel(tkinter.Frame):
 
     def changePeriod(self, event):
         self._current_period = event.widget.cget("text")
-
-    def setPeriod(self, period):
-        if period in [constants.AM, constants.PM]:
-            self._current_period = period
-
-        else:
-            raise ValueError(f"Unknown value {period} Use AM/PM")
 
     def period(self):
         """ returns period """

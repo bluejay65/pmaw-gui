@@ -329,10 +329,6 @@ class SpinTimePickerModern(basetimepicker.SpinBaseClass):
         """ sets minutes value """
         self._minutes.setValue(val)
 
-    def setPeriod(self, period: str):
-        """ sets period value """
-        self._period.setPeriod(period)
-
     def configure_12HrsTime(self, **kwargs):
         super(SpinTimePickerModern, self).configure_12HrsTime(**kwargs)
         self.spinlblGroup.defaultItem(self._12HrsTime)

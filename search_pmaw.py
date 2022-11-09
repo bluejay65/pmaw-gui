@@ -10,13 +10,16 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 class CallPmaw:
-    def __init__(self, output):
+    def __init__(self, output=None, executor=None, main_thread=None):
         self.praw = None
         self.output = output
+        self.executor = executor
+        self.main_thread = main_thread
 
-    def get_comment_df(self, dict, search_type:SearchType, executor=None):
+
+
+    def get_comment_df(self, dict, search_type:SearchType):
         print("\nRunning...")
-        self.output.new_append("Running...")
 
         q = dict['q']
         limit = dict['limit']
@@ -32,38 +35,51 @@ class CallPmaw:
         if 'retrieved_datetime' in fields and 'retrieved_utc' not in fields:
             fields.append('retrieved_utc')
 
+        print('here')
+
         if search_type == SearchType.PRAW.value:
             fields.append('id')
-            api = PushshiftAPI(praw=self.get_praw())
-        else:
-            api = PushshiftAPI()
-
-        if executor:
-            if isinstance(after, int) and isinstance(before, int):
-                comments = executor.submit(api.search_comments, executor=executor, output=self.output, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
-            elif isinstance(after, int):
-                comments = executor.submit(api.search_comments, executor=executor, output=self.output, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
-            elif isinstance(before, int):
-                comments = executor.submit(api.search_comments, executor=executor, output=self.output, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+            if self.can_multithread():
+                api = PushshiftAPI(praw=self.get_praw(), output=self.output, executor=self.executor, main_thread=self.main_thread)
             else:
-                comments = executor.submit(api.search_comments, executor=executor, output=self.output, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
+                api = PushshiftAPI(praw=self.get_praw(), output=self.output)
+        else:
+            if self.can_multithread():
+                api = PushshiftAPI(output=self.output, executor=self.executor, main_thread=self.main_thread)
+            else:
+                api = PushshiftAPI(output=self.output)
 
+        if self.can_multithread():
+            print('multithread')
+            if isinstance(after, int) and isinstance(before, int):
+                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
+            elif isinstance(after, int):
+                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
+            elif isinstance(before, int):
+                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+            else:
+                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
+
+            df = pd.DataFrame([comment for comment in comments.result()])
+            print(df)
             print('Organizing collected data...')
             self.output.append('Organizing collected data...')
-            df = pd.DataFrame([comment for comment in comments.results()])
+            
         else:
+            print('not multithread')
             if isinstance(after, int) and isinstance(before, int):
-                comments = api.search_comments(output=self.output, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
+                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
             elif isinstance(after, int):
-                comments = api.search_comments(output=self.output, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
+                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
             elif isinstance(before, int):
-                comments = api.search_comments(output=self.output, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
             else:
-                comments = api.search_comments(output=self.output, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
+                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
 
             print('Organizing collected data...')
             self.output.append('Organizing collected data...')
             df = pd.DataFrame([comment for comment in comments])
+            print(df)
             
 
         if df.empty:
@@ -148,9 +164,10 @@ class CallPmaw:
         return df
 
 
-    def save_comment_file(self, dict, file, file_type:FileType, search_type:SearchType, executor=None):
+    def save_comment_file(self, dict, file, file_type:FileType, search_type:SearchType):
+        self.output.set_title('Downloading Comments')
         self.output.start_progress_bar()
-        df = self.get_comment_df(dict, search_type, executor)
+        df = self.get_comment_df(dict, search_type)
         if not df.empty:
             file = CallPmaw.add_file_type(file, file_type)
             error = self.save_df_to_file(df, file, file_type)
@@ -261,3 +278,12 @@ class CallPmaw:
             file += file_type
         return file
 
+    def can_multithread(self):
+        if self.main_thread is not None and self.executor is not None:
+            return True
+        return False
+
+"""
+api = PushshiftAPI()
+comments = api.search_comments(q='hello', subreddit='beauty', limit=500)
+"""

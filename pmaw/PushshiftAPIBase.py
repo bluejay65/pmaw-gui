@@ -12,6 +12,11 @@ from pmaw.Request import Request
 
 
 log = logging.getLogger(__name__)
+""" handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+log.addHandler(handler) """
 
 
 class PushshiftAPIBase:
@@ -19,7 +24,7 @@ class PushshiftAPIBase:
 
     def __init__(self, num_workers=10, max_sleep=60, rate_limit=60, base_backoff=0.5,
                  batch_size=None, shards_down_behavior='warn', limit_type='average', jitter=None,
-                 checkpoint=10, file_checkpoint=20, praw=None):
+                 checkpoint=10, file_checkpoint=20, praw=None, executor=None, output=None, main_thread=None):
         self.num_workers = num_workers
         self.domain = 'api'
         self.shards_down_behavior = shards_down_behavior
@@ -28,6 +33,9 @@ class PushshiftAPIBase:
         self.checkpoint = checkpoint
         self.file_checkpoint = file_checkpoint
         self.praw = praw
+        self.executor = executor
+        self.output=output
+        self.main_thread = main_thread
 
         if batch_size:
             self.batch_size = batch_size
@@ -52,9 +60,12 @@ class PushshiftAPIBase:
         self._impose_rate_limit()
         r = requests.get(url, params=payload)
         status = r.status_code
-        reason = r.reason
+        reason = r.reason #TODO save html of pages from pushshift to test with when it's down
 
         if status == 200:
+            """ self.count += 1
+            with open((os.path.join(os.path.join(os.getcwd(), 'web pages'), f'test {self.count}')), 'w') as f:
+                f.write(r.text) """
             r = json.loads(r.text)
 
             # check if shards are down
@@ -80,12 +91,12 @@ class PushshiftAPIBase:
         shards = self.metadata_.get('shards')
         if shards is None:
             return
+        print(f'available: {shards["successful"]}, total: {shards["total"]}')
         return shards['successful'] != shards['total']
 
     def _multithread(self, check_total=False):
-        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
-
-            while len(self.req.req_list) > 0 and not self.req.exit.is_set():
+        if self.executor:
+            while len(self.req.req_list) > 0 and not self.exit_is_set():
                 # reset resp_dict which tracks remaining responses for timeslices
                 self.resp_dict = {}
 
@@ -97,7 +108,7 @@ class PushshiftAPIBase:
                     for i in range(min(len(self.req.req_list), self.batch_size)):
                         reqs.append(self.req.req_list.popleft())
 
-                futures = {executor.submit(
+                futures = {self.executor.submit(
                     self._get, url_pay[0], url_pay[1]): url_pay for url_pay in reqs}
 
                 self._futures_handler(futures, check_total)
@@ -105,10 +116,12 @@ class PushshiftAPIBase:
                 # reset attempts if no failures
                 self._rate_limit._check_fail()
 
+                shards = self.metadata_.get('shards')
+                self.output_shards(shards['successful'], shards['total'])
+
                 # check if shards are down
                 if self.shards_are_down and (self.shards_down_behavior is not None):
-                    shards = self.metadata_.get('shards')
-                    shards_down_message = "Not all PushShift shards are active ("+str(shards['successful'])+"/"+str(shards['total'])+"). Query results may be incomplete."
+                    shards_down_message = "Not all PushShift shards are active. Query results may be incomplete."
                     if self.shards_down_behavior == 'warn':
                         log.warning(shards_down_message)
                     if self.shards_down_behavior == 'stop':
@@ -119,13 +132,56 @@ class PushshiftAPIBase:
                     self.num_batches += 1
                     if self.num_batches % self.file_checkpoint == 0:
                         # cache current results
-                        executor.submit(self.req.save_cache())
+                        self.executor.submit(self.req.save_cache())
                     self._print_stats('Checkpoint')
                 else:
                     break
             if not check_total:
                 self._print_stats('Total')
-            self._shutdown(executor)
+        
+        else:
+            with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+                while len(self.req.req_list) > 0 and not self.req.exit.is_set():
+                    # reset resp_dict which tracks remaining responses for timeslices
+                    self.resp_dict = {}
+
+                    # set number of futures created to batch size
+                    reqs = []
+                    if check_total:
+                        reqs.append(self.req.req_list.popleft())
+                    else:
+                        for i in range(min(len(self.req.req_list), self.batch_size)):
+                            reqs.append(self.req.req_list.popleft())
+
+                    futures = {executor.submit(
+                        self._get, url_pay[0], url_pay[1]): url_pay for url_pay in reqs}
+
+                    self._futures_handler(futures, check_total)
+
+                    # reset attempts if no failures
+                    self._rate_limit._check_fail()
+
+                    # check if shards are down
+                    if self.shards_are_down and (self.shards_down_behavior is not None):
+                        shards_down_message = "Not all PushShift shards are active. Query results may be incomplete."
+                        if self.shards_down_behavior == 'warn':
+                            log.warning(shards_down_message)
+                        if self.shards_down_behavior == 'stop':
+                            self._shutdown(executor)
+                            raise RuntimeError(
+                                shards_down_message + f' {len(self.req.req_list)} unfinished requests.')
+                    if not check_total:
+                        self.num_batches += 1
+                        if self.num_batches % self.file_checkpoint == 0:
+                            # cache current results
+                            executor.submit(self.req.save_cache())
+                        self._print_stats('Checkpoint')
+                    else:
+                        break
+                if not check_total:
+                    self._print_stats('Total')
+                self._shutdown(executor)
+
 
     def _futures_handler(self, futures, check_total):
         for future in as_completed(futures):
@@ -176,6 +232,7 @@ class PushshiftAPIBase:
                                 # generate payloads
                                 self.req.gen_slices(
                                     url, payload, after, before, num)
+                self.output_progress(self.req.limit)
 
             except HTTPError as exc:
                 log.debug(f"Request Failed -- {exc}")
@@ -194,109 +251,31 @@ class PushshiftAPIBase:
     def _print_stats(self, prefix):
         rate = self.num_suc/self.num_req*100
         remaining = self.req.limit
+        print(f'Testing:: Success Rate: {rate:.2f}% - Requests: {self.num_req} - Batches: {self.num_batches} - Items Remaining: {remaining}')
         if (self.num_batches % self.checkpoint == 0) and prefix == 'Checkpoint':
             log.info(
                 f'{prefix}:: Success Rate: {rate:.2f}% - Requests: {self.num_req} - Batches: {self.num_batches} - Items Remaining: {remaining}')
-            print(f'{prefix}:: Success Rate: {rate:.2f}% - Requests: {self.num_req} - Batches: {self.num_batches} - Items Remaining: {remaining}') #added
         elif prefix == 'Total':
             if remaining < 0:
                 remaining = 0  # don't print a neg number
             log.info(
                 f'{prefix}:: Success Rate: {rate:.2f}% - Requests: {self.num_req} - Batches: {self.num_batches} - Items Remaining: {remaining}')
-            print(f'{prefix}:: Success Rate: {rate:.2f}% - Requests: {self.num_req} - Batches: {self.num_batches} - Items Remaining: {remaining}') #added
             if(self.req.praw and len(self.req.enrich_list) > 0):
                 # let the user know praw enrichment is still in progress so it doesnt appear to hang after
                 # finishing retrieval from Pushshift
                 log.info(f'Finishing enrichment for {len(self.req.enrich_list)} items')
-                print(f'Finishing enrichment for {len(self.req.enrich_list)} items')
-
-    def get_total_avail(self,
-                kind,
-                max_ids_per_request=500,
-                max_results_per_request=100,
-                mem_safe=False,
-                search_window=365,
-                dataset='reddit',
-                safe_exit=False,
-                cache_dir=None,
-                filter_fn=None,
-                **kwargs):
-
-        self.metadata_ = {}
-        self.resp_dict = {}
-        self.req = Request(copy.deepcopy(kwargs), filter_fn, kind,
-                           max_results_per_request, max_ids_per_request, mem_safe, safe_exit, cache_dir, self.praw)
-
-        # reset stat tracking
-        self._reset()
-
-        if kind == 'submission_comment_ids':
-            endpoint = f'{dataset}/submission/comment_ids/'
-        else:
-            endpoint = f'{dataset}/{kind}/search'
-
-        if kind == 'comment' and ('q' not in kwargs or not kwargs['q']) and ('subreddit' not in kwargs or not kwargs['subreddit']) and ('author' not in kwargs or not kwargs['author']):
-            check_total = False
-        else:
-            check_total = True
-
-        url = self.base_url.format(endpoint=endpoint)
-        
-        if 'ids' not in self.req.payload:
-            # check to see how many results are remaining
-            self.req.req_list.appendleft((url, self.req.payload))
-            
-            
-            with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
-                # reset resp_dict which tracks remaining responses for timeslices
-                self.resp_dict = {}
-
-                # set number of futures created to batch size
-                reqs = []
-                if check_total:
-                    reqs.append(self.req.req_list.popleft())
-                else:
-                    for i in range(min(len(self.req.req_list), self.batch_size)):
-                        reqs.append(self.req.req_list.popleft())
-
-                futures = {executor.submit(
-                    self._get, url_pay[0], url_pay[1]): url_pay for url_pay in reqs}
-
-                self._futures_handler(futures, check_total)
-
-                # reset attempts if no failures
-                self._rate_limit._check_fail()
-
-                # check if shards are down
-                if self.shards_are_down and (self.shards_down_behavior is not None):
-                    shards = self.metadata_.get('shards')
-                    shards_down_message = "Not all PushShift shards are active ("+str(shards['successful'])+"/"+str(shards['total'])+"). Query results may be incomplete."
-                    if self.shards_down_behavior == 'warn':
-                        log.warning(shards_down_message)
-                    if self.shards_down_behavior == 'stop':
-                        self._shutdown(executor)
-                        raise RuntimeError(
-                            shards_down_message + f' {len(self.req.req_list)} unfinished requests.')
-                print(self.metadata_.get('total_results', 0))
-                if not check_total:
-                    self.num_batches += 1
-                    if self.num_batches % self.file_checkpoint == 0:
-                        # cache current results
-                        executor.submit(self.req.save_cache())
-                    self._print_stats('Checkpoint')
-            if not check_total:
-                self._print_stats('Total')
-            self._shutdown(executor)
-
-            total_avail = self.metadata_.get('total_results', 0)
-            return total_avail
-        
-
 
     def _reset(self):
         self.num_suc = 0
         self.num_req = 0
         self.num_batches = 0
+        self.count = 0
+
+    def exit_is_set(self):
+        if self.main_thread is not None:
+            return self.main_thread.exit.is_set()
+        else:
+            return self.req.exit.is_set()
 
     def _search(self,
                 kind,
@@ -315,8 +294,10 @@ class PushshiftAPIBase:
             err_msg = "Aggregations support for {} has not yet been implemented, please use the PSAW package for your request"
             raise NotImplementedError(err_msg.format(kwargs['aggs']))
 
+        self.largest_remaining = 0
         self.metadata_ = {}
         self.resp_dict = {}
+        self.count = 0
         self.req = Request(copy.deepcopy(kwargs), filter_fn, kind,
                            max_results_per_request, max_ids_per_request, mem_safe, safe_exit, cache_dir, self.praw)
 
@@ -328,19 +309,14 @@ class PushshiftAPIBase:
         else:
             endpoint = f'{dataset}/{kind}/search'
 
-        if kind == 'comment' and ('q' not in kwargs or not kwargs['q']) and ('subreddit' not in kwargs or not kwargs['subreddit']) and ('author' not in kwargs or not kwargs['author']):
-            should_check_total = False
-        else:
-            should_check_total = True
-
         url = self.base_url.format(endpoint=endpoint)
 
-        while (self.req.limit is None or self.req.limit > 0) and not self.req.exit.is_set():
+        while (self.req.limit is None or self.req.limit > 0) and not self.exit_is_set():
             # set/update limit
             if 'ids' not in self.req.payload and len(self.req.req_list) == 0:
                 # check to see how many results are remaining
                 self.req.req_list.appendleft((url, self.req.payload))
-                self._multithread(check_total=should_check_total) #TODO make this optional
+                self._multithread(check_total=True)
                 total_avail = self.metadata_.get('total_results', 0)
 
                 if self.req.limit is None:
@@ -348,17 +324,41 @@ class PushshiftAPIBase:
                     self.req.limit = total_avail
                 elif (total_avail < self.req.limit):
                     log.info(f'{self.req.limit - total_avail} result(s) not found in Pushshift')
-                    self.req.limit = total_avail   
+                    self.req.limit = total_avail
 
             # generate payloads
             self.req.gen_url_payloads(
                 url, self.batch_size, search_window)
 
             # check for exit signals
-            self.req.check_sigs()
+            if not self.executor:
+                self.req.check_sigs()
 
             if self.req.limit > 0 and len(self.req.req_list) > 0:
                 self._multithread()
 
         self.req.save_cache()
         return self.req.resp
+
+
+    def can_output(self):
+        return self.output is not None
+
+    def output_text(self, text:str):
+        if self.can_output():
+            self.output.append(text)
+
+    def output_shards(self, available_shards, total_shards):
+        if self.can_output():
+            self.output.set_shards(available_shards, total_shards)
+
+    def output_progress(self, remaining):
+        if self.can_output():
+            if self.largest_remaining == sys.maxsize:
+                self.largest_remaining = remaining
+            else:
+                if remaining > self.largest_remaining:
+                    self.largest_remaining = remaining
+                self.output.set_remaining(remaining)
+                self.output.update_progress_bar(remaining, self.largest_remaining)
+            

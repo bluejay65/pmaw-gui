@@ -90,7 +90,7 @@ class CommentGUI(BaseGUI):
                 return
         self.parent.select(constants.NotebookPage.OUTPUT_PAGE.value)
         self.executor.submit(self.pmaw.save_comment_file, entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
-
+        #self.pmaw.save_comment_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
     
     def select_file(self):
         self.file_selected = filedialog.asksaveasfilename()
