@@ -14,6 +14,8 @@ from pmaw.utils.slices import timeslice, mapslice
 from pmaw.utils.filter import apply_filter
 from pmaw.Response import Response
 
+from constants import CRITICAL_MESSAGE
+
 
 log = logging.getLogger(__name__)
 
@@ -145,22 +147,25 @@ class Request:
             time.sleep(interval-diff)
 
     def save_cache(self):
-        # trim extra responses
-        self.trim()
+        try:
+            # trim extra responses
+            self.trim()
 
-        # enrich if needed
-        if self.praw:
-            while len(self.enrich_list) > 0:
-                self._enrich_data()
+            # enrich if needed
+            if self.praw:
+                while len(self.enrich_list) > 0:
+                    self._enrich_data()
 
-        if self.safe_exit and not self.limit == None and (self.limit == 0 or self.exit.is_set()):
-            # save request info to cache
-            self._cache.save_info(req_list=self.req_list,
-                                  payload=self.payload, limit=self.limit)
-            # save responses to cache
-            self.resp.to_cache()
-        elif self.mem_safe:
-            self.resp.to_cache()
+            if self.safe_exit and not self.limit == None and (self.limit == 0 or self.exit.is_set()):
+                # save request info to cache
+                self._cache.save_info(req_list=self.req_list,
+                                    payload=self.payload, limit=self.limit)
+                # save responses to cache
+                self.resp.to_cache()
+            elif self.mem_safe:
+                self.resp.to_cache()
+        except:
+            logging.critical(CRITICAL_MESSAGE, exc_info=True)
 
     def _exit(self, signo, _frame):
         self.exit.set()
@@ -179,6 +184,7 @@ class Request:
             self.limit -= 1
         else:
             self.limit -= len(results)
+                
             
         if self.praw:
             # save fullnames of objects to be enriched with metadata by PRAW

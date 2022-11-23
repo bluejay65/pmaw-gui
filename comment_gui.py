@@ -46,19 +46,16 @@ class CommentGUI(BaseGUI):
         self.parent = parent
         self.executor = executor
 
-        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields)
-        self.label_entries.grid(row=0, column=0, rowspan=2)
+        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields, labelanchor='n')
+        self.label_entries.grid(row=0, column=0, rowspan=2, sticky='ns')
 
-        self.return_entries = Checklist(self, constants.COMMENT_RETURN_FIELDS, title='Data to Return', height = 200, scrollbar=True)
+        self.return_entries = Checklist(self, constants.COMMENT_RETURN_FIELDS, title='Data to Return', height = 200, scrollbar=True, labelanchor='n', can_select_all=True, can_clear_all=True)
 
-        self.return_entries.grid(row=0, column=1)
+        self.return_entries.grid(row=0, column=1, sticky='new')
         self.reset_return_fields()
 
-        self.file_type_button = Radiolist(self, options=[e.value for e in ExportFileType], title='Save as File Type')
-        #self.file_type_button.grid(row=1, column=1)
-
-        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using', command='on_search_type_selection')
-        self.search_type_button.grid(row=1, column=1)
+        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using', command='on_search_type_selection', labelanchor='n')
+        self.search_type_button.grid(row=1, column=1, sticky='sew')
         self.search_type_button.select(SearchType.PMAW.value)
         self.on_search_type_selection(SearchType.PMAW.value)
 
@@ -81,17 +78,19 @@ class CommentGUI(BaseGUI):
 
     def run(self):
         entry_dict = self.get_entries()
+        if entry_dict['q'] is None and entry_dict['subreddit'] is None and entry_dict['author'] is None:
+            messagebox.showerror(title='Impossible Search Filters', message='A Search Term, Author, or Subreddit must be provided')
         if entry_dict['before'] is not None and entry_dict['after'] is not None:
             if entry_dict['before'] < entry_dict['after'] :
                 messagebox.showerror(message='\'Posted Before\' is set to before \'Posted After\'. No data will be available.', title='Impossible Search Filters')
                 return
-        if entry_dict['q'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
-            if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
+            elif entry_dict['before'] == entry_dict['after']:
+                messagebox.showerror(message='\'Posted Before\' is set exactly the same as \'Posted After\'. No data will be available.', title='Impossible Search Filters')
                 return
         self.parent.select(constants.NotebookPage.OUTPUT_PAGE.value)
         self.executor.submit(self.pmaw.save_comment_file, entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
-        #self.pmaw.save_comment_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
-    
+
+
     def select_file(self):
         self.file_selected = filedialog.asksaveasfilename()
 
@@ -145,3 +144,10 @@ class CommentGUI(BaseGUI):
             entry_dict['before'] = None
 
         return entry_dict
+
+    
+    def disable_run(self):
+        self.run_button['state'] = 'disabled'
+
+    def enable_run(self):
+        self.run_button['state'] = 'normal'

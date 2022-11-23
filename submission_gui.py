@@ -1,4 +1,3 @@
-from json import tool
 import sys
 import tkinter as tk
 from tkinter import filedialog
@@ -81,21 +80,22 @@ class SubmissionGUI(BaseGUI):
         tk.Frame.__init__(self, parent, **kwargs)
         self.pmaw = pmaw
         self.root = root
+        self.parent = parent
         self.executor = executor
 
-        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields)
-        self.label_entries.grid(row=0, column=0, rowspan=2)
+        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields, labelanchor='n')
+        self.label_entries.grid(row=0, column=0, rowspan=2, sticky='ns')
         self.label_entries.update()
 
-        self.return_entries = Checklist(self, constants.SUBMISSION_RETURN_FIELDS, title='Data to Return', scrollbar=True, height=450)
+        self.return_entries = Checklist(self, constants.SUBMISSION_RETURN_FIELDS, title='Data to Return', scrollbar=True, height=450, labelanchor='n')
 
-        self.return_entries.grid(row=0, column=1)
+        self.return_entries.grid(row=0, column=1, sticky='new')
         self.reset_return_fields()
 
-        self.file_type_button = Radiolist(self, options=[e.value for e in ExportFileType], title='Save as File Type')
+        self.file_type_button = Radiolist(self, options=[e.value for e in ExportFileType], title='Save as File Type', labelanchor='n')
 
-        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using', command='on_search_type_selection')
-        self.search_type_button.grid(row=1, column=1)
+        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using', command='on_search_type_selection', labelanchor='n')
+        self.search_type_button.grid(row=1, column=1, sticky='sew')
         self.search_type_button.select(SearchType.PMAW.value)
 
         self.file_selected = ''
@@ -124,9 +124,8 @@ class SubmissionGUI(BaseGUI):
         if entry_dict['q'] is None and entry_dict['title'] is None and entry_dict['selftext'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
             if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
                 return
-        self.root.iconify()
-        #self.executor.submit(self.pmaw.save_submission_file, entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
-        self.pmaw.save_submission_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
+        self.parent.select(constants.NotebookPage.OUTPUT_PAGE.value)
+        self.executor.submit(self.pmaw.save_submission_file, entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
     
     def select_file(self):
         self.file_selected = filedialog.asksaveasfilename()
@@ -194,3 +193,10 @@ class SubmissionGUI(BaseGUI):
             entry_dict['before'] = None  
 
         return entry_dict
+
+
+    def disable_run(self):
+        self.run_button['state'] = 'disabled'
+
+    def enable_run(self):
+        self.run_button['state'] = 'normal'

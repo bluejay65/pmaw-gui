@@ -9,6 +9,7 @@ from tkwidgets.labelentry import *
 from tkwidgets.labelentrylist import *
 from tkwidgets.labelrange import *
 from tkwidgets.labeltime import *
+from tkwidgets.console import *
 from tkwidgets.radiolist import *
 from tkwidgets.scrolledframe import *
 from tkwidgets.tooltip import *

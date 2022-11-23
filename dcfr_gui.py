@@ -2,21 +2,31 @@ import tkinter as tk
 import comment_gui, data_gui, submission_gui, output_gui
 import constants
 import webbrowser
+from resource_manager import ResourceManager
+from app_info import AppInfo
 from tkinter import ttk
 from search_pmaw import CallPmaw
 import sys
 import signal
 from threading import Event
 from concurrent.futures import ThreadPoolExecutor
+import logging
 
 sys.path.append('base')
+AppInfo.configure_log()
+logging.basicConfig(filename=AppInfo.get_log_path(), level=logging.INFO)
+logging.info('Opened %s %s on %s', constants.APP_NAME, constants.VERSION, sys.platform)
+
+log = logging.getLogger(__name__)
 
 
 class DcfrGUI():
     def __init__(self) -> None:
         self.exit = Event()
         self.setup_sigs()
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        self.resource_manager = ResourceManager(AppInfo.get_resource_folder())
+
+        with ThreadPoolExecutor(max_workers=10) as self.executor:
             self.root = tk.Tk()
             self.root.title(constants.APP_NAME+" "+constants.VERSION)
             self.root.columnconfigure(0, weight=100)
@@ -27,18 +37,18 @@ class DcfrGUI():
             self.notebook.grid(sticky='news')
             self.page = 1
 
-            self.output_page = output_gui.OutputGUI(self.notebook, self.root)
-            self.pmaw = CallPmaw(output=self.output_page, executor=executor, main_thread=self)
+            self.output_page = output_gui.OutputGUI(self.notebook, self.root, self.resource_manager)
+            self.pmaw = CallPmaw(gui=self, output=self.output_page, executor=self.executor, main_thread=self)
 
-            self.comment_page = comment_gui.CommentGUI(self.pmaw, self.notebook, self.root, executor=executor)
+            self.comment_page = comment_gui.CommentGUI(self.pmaw, self.notebook, self.root, executor=self.executor)
             text = 'Comments'
             self.notebook.add(self.comment_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
 
-            self.submission_page = submission_gui.SubmissionGUI(self.pmaw, self.notebook, self.root, executor=executor)
+            self.submission_page = submission_gui.SubmissionGUI(self.pmaw, self.notebook, self.root, executor=self.executor)
             text = 'Submissions'
             self.notebook.add(self.submission_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
 
-            self.data_page = data_gui.DataGUI(self.notebook, self.root, executor=executor)
+            self.data_page = data_gui.DataGUI(self.notebook, self.root, executor=self.executor, output=self.output_page)
             text = 'Data Analysis'
             self.notebook.add(self.data_page, text=text.center(constants.NOTEBOOK_WRAP), sticky='news')
 
@@ -64,12 +74,13 @@ class DcfrGUI():
         elif self.page == constants.NotebookPage.SUBMISSION_PAGE.value:
             self.root.geometry(str(constants.SUBMISSION_WIDTH)+'x'+str(constants.SUBMISSION_HEIGHT))
         elif self.page == constants.NotebookPage.DATA_PAGE.value:
-            self.root.geometry(str(constants.DATA_WIDTH)+'x'+str(constants.DATA_HEIGHT))
+            self.root.geometry(str(self.data_page.width)+'x'+str(self.data_page.height))
         elif self.page == constants.NotebookPage.OUTPUT_PAGE.value:
-            self.root.geometry(str(constants.COMMENT_WIDTH)+'x'+str(constants.COMMENT_HEIGHT))
+            self.root.geometry(str(self.output_page.width)+'x'+str(self.output_page.height))
         elif self.page == constants.NotebookPage.GUIDE_PAGE.value:
             self.notebook.select(last_page)
             webbrowser.open_new_tab(constants.GUIDE_URL)
+
 
     def setup_sigs(self):
         try:
@@ -83,19 +94,33 @@ class DcfrGUI():
 
     def set_exit(self, *args):
         self.exit.set()
+        self.executor.shutdown(wait=False, cancel_futures=True)
+
+    def disable_run(self):
+        self.comment_page.disable_run()
+        self.submission_page.disable_run()
+
+    def enable_run(self):
+        self.comment_page.enable_run()
+        self.submission_page.enable_run()
+
+try:
+    gui = DcfrGUI()
+except:
+    log.critical(constants.CRITICAL_MESSAGE, exc_info=True)
 
 
-gui = DcfrGUI()
-
-
-#TODO get signal working
-#TODO error when gini (check panek email)
-#TODO search filters too specific versus no data available in time frame
-#TODO explain results remaining
-#TODO add select all button for return fields
-#TODO work with different OS (test)
+#TODO add select all and clear all button for return fields
 #TODO let user clear date
-#TODO save recent searches and let them fill them back in
+#TODO add better time selector
+#TODO save recent searches and let user fill them back in
+#TODO make sure pngs work even if not connected to internet (have alternatives)
+#TODO get signal working (test with linux)
+#TODO work with different OS (test)
+#TODO change name
+#TODO design and add icon
 #TODO visualization
+#TODO check all data not being returned on 12/1
+#TODO search filters too specific versus no data available in time frame (have search of just the before and after, see what happens)
 
 #reddit data collection and analysis tool (redcat)

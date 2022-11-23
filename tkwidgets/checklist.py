@@ -4,11 +4,11 @@ import tkwidgets as tkw
 
 
 # A list of checkbuttons that can be selected and deselected by code or user
-class Checklist(ttk.Labelframe):
+class Checklist(tk.LabelFrame):
 
     # Creates the checkbuttons from listvariable and adds them to the frame
-    def __init__(self, parent, listvariable: list, height:int = None, title: str = None, command: str = None, scrollbar: bool = False, **kwargs):
-        ttk.Labelframe.__init__(self, parent, text=title, **kwargs)
+    def __init__(self, parent, listvariable: list, height:int = None, title: str = None, command: str = None, scrollbar: bool = False, can_select_all:bool = False, can_clear_all:bool = False, **kwargs):
+        tk.LabelFrame.__init__(self, parent, text=title, **kwargs)
 
         self.command = command
         self.parent = parent
@@ -19,7 +19,24 @@ class Checklist(ttk.Labelframe):
         else:
             self.frame = self.edit_frame = tk.Frame(self, height=height)
 
-        self.frame.grid(row=0, column=0)
+        num_columns = 0
+        if can_select_all:
+            self.select_button = tk.Button(self, command=self.select_all, text='Select All')
+            self.select_button.grid(row=1, column=num_columns)
+            num_columns += 1
+        if can_clear_all:
+            self.clear_button = tk.Button(self, command=self.clear, text='Clear All')
+            self.clear_button.grid(row=1, column=num_columns)
+            num_columns += 1
+
+        if num_columns <= 1:
+            self.frame.grid(row=0, column=0, sticky='news')
+            self.grid_columnconfigure(0, weight=1)
+        else:
+            self.frame.grid(row=0, column=0, sticky='news', columnspan=num_columns)
+            for col in range(num_columns):
+                self.grid_columnconfigure(col, weight=1)
+                
         self.vars = []
         self.checkbuttons = {}
         self.hidden_checkbuttons = {}
@@ -66,8 +83,9 @@ class Checklist(ttk.Labelframe):
                 self.checkbuttons.pop(item)
 
     def remove_all_items(self):
-        for item in self.checkbuttons.keys():
-            self.checkbuttons[item].grid_forget()
+        for button in self.checkbuttons.values():
+            button.grid_forget()
+        self.vars = []
         self.checkbuttons = {}
 
     def hide_items(self, items: list):
@@ -96,6 +114,10 @@ class Checklist(ttk.Labelframe):
                 self.checkbuttons[i].select()
             else:
                 self.checkbuttons[i].deselect()
+
+    def select_all(self):
+        for i in self.checkbuttons.keys():
+            self.checkbuttons[i].select()
 
     def clear(self):
         self.check_items([])

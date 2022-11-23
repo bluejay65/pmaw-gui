@@ -3,11 +3,11 @@ from tkinter import ttk
 
 
 # A list of checkbuttons that can be selected and deselected by code or user
-class Radiolist(ttk.Labelframe):
+class Radiolist(tk.LabelFrame):
 
     # Creates the checkbuttons from listvariable and adds them to the frame
     def __init__(self, parent, options: list, title: str = None, command: str = None, **kwargs):
-        ttk.Labelframe.__init__(self, parent, text=title, **kwargs)
+        tk.LabelFrame.__init__(self, parent, text=title, **kwargs)
 
         self.parent = parent
         self.command = command

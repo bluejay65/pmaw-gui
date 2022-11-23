@@ -9,14 +9,10 @@ from requests import HTTPError
 
 from pmaw.RateLimit import RateLimit
 from pmaw.Request import Request
+from constants import CRITICAL_MESSAGE
 
 
 log = logging.getLogger(__name__)
-""" handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-log.addHandler(handler) """
 
 
 class PushshiftAPIBase:
@@ -57,46 +53,52 @@ class PushshiftAPIBase:
             self.req._idle_task(interval)
 
     def _get(self, url, payload={}):
-        self._impose_rate_limit()
-        r = requests.get(url, params=payload)
-        status = r.status_code
-        reason = r.reason #TODO save html of pages from pushshift to test with when it's down
+        try:
+            self._impose_rate_limit()
+            r = requests.get(url, params=payload)
+            status = r.status_code
+            reason = r.reason #TODO save html of pages from pushshift to test with when it's down
 
-        if status == 200:
-            """ self.count += 1
-            with open((os.path.join(os.path.join(os.getcwd(), 'web pages'), f'test {self.count}')), 'w') as f:
-                f.write(r.text) """
-            r = json.loads(r.text)
+            if status == 200:
+                """ self.count += 1
+                with open((os.path.join(os.path.join(os.getcwd(), 'web pages'), f'test {self.count}')), 'w') as f:
+                    f.write(r.text) """
+                r = json.loads(r.text)
 
-            # check if shards are down
-            self.metadata_ = r.get('metadata', {})
-            total_results = self.metadata_.get('total_results', None)
-            if total_results:
-                after, before = None, None
-                for param in self.metadata_['ranges']:
-                    created = param['range']['created_utc']
-                    if created.get('gt', None):
-                        after = created['gt']
-                    elif created.get('lt', None):
-                        before = created['lt']
-                if after and before:
-                    self.resp_dict[(after, before)] = total_results
+                # check if shards are down
+                self.metadata_ = r.get('metadata', {})
+                total_results = self.metadata_.get('total_results', None)
+                if self.possible_results <= 0:
+                    self.possible_results = total_results
+                if total_results:
+                    after, before = None, None
+                    for param in self.metadata_['ranges']:
+                        created = param['range']['created_utc']
+                        if created.get('gt', None):
+                            after = created['gt']
+                        elif created.get('lt', None):
+                            before = created['lt']
+                    if after and before:
+                        self.resp_dict[(after, before)] = total_results
 
-            return r['data']
-        else:
-            raise HTTPError(f"HTTP {status} - {reason}")
+                return r['data']
+            else:
+                if status != 429:
+                    self.output_error(f"HTTP {status} - {reason}")
+                    log.warning(f"HTTP {status} - {reason}")
+        except:
+            log.critical(CRITICAL_MESSAGE, exc_info=True)
 
     @property
     def shards_are_down(self):
         shards = self.metadata_.get('shards')
         if shards is None:
             return
-        print(f'available: {shards["successful"]}, total: {shards["total"]}')
         return shards['successful'] != shards['total']
 
     def _multithread(self, check_total=False):
         if self.executor:
-            while len(self.req.req_list) > 0 and not self.exit_is_set():
+            while len(self.req.req_list) > 0 and not self.exit_is_set() and not self.cancel_is_set():
                 # reset resp_dict which tracks remaining responses for timeslices
                 self.resp_dict = {}
 
@@ -189,6 +191,8 @@ class PushshiftAPIBase:
             self.num_req += int(not check_total)
             try:
                 data = future.result()
+                if data == None:
+                    data = []
                 self.num_suc += int(not check_total)
                 url = url_pay[0]
                 payload = url_pay[1]
@@ -251,7 +255,6 @@ class PushshiftAPIBase:
     def _print_stats(self, prefix):
         rate = self.num_suc/self.num_req*100
         remaining = self.req.limit
-        print(f'Testing:: Success Rate: {rate:.2f}% - Requests: {self.num_req} - Batches: {self.num_batches} - Items Remaining: {remaining}')
         if (self.num_batches % self.checkpoint == 0) and prefix == 'Checkpoint':
             log.info(
                 f'{prefix}:: Success Rate: {rate:.2f}% - Requests: {self.num_req} - Batches: {self.num_batches} - Items Remaining: {remaining}')
@@ -294,7 +297,15 @@ class PushshiftAPIBase:
             err_msg = "Aggregations support for {} has not yet been implemented, please use the PSAW package for your request"
             raise NotImplementedError(err_msg.format(kwargs['aggs']))
 
-        self.largest_remaining = 0
+        if 'limit' in kwargs:
+            if kwargs['limit'] < sys.maxsize and kwargs['limit'] > 0:
+                self.limit = kwargs['limit']
+            else:
+                self.limit = -1
+        else:
+            self.limit = -1
+
+        self.possible_results = 0
         self.metadata_ = {}
         self.resp_dict = {}
         self.count = 0
@@ -311,7 +322,7 @@ class PushshiftAPIBase:
 
         url = self.base_url.format(endpoint=endpoint)
 
-        while (self.req.limit is None or self.req.limit > 0) and not self.exit_is_set():
+        while (self.req.limit is None or self.req.limit > 0) and not self.exit_is_set() and not self.cancel_is_set():
             # set/update limit
             if 'ids' not in self.req.payload and len(self.req.req_list) == 0:
                 # check to see how many results are remaining
@@ -319,12 +330,8 @@ class PushshiftAPIBase:
                 self._multithread(check_total=True)
                 total_avail = self.metadata_.get('total_results', 0)
 
-                if self.req.limit is None:
-                    log.info(f'{total_avail} result(s) available in Pushshift')
-                    self.req.limit = total_avail
-                elif (total_avail < self.req.limit):
-                    log.info(f'{self.req.limit - total_avail} result(s) not found in Pushshift')
-                    self.req.limit = total_avail
+                log.info(f'{total_avail} result(s) available in Pushshift')
+                self.req.limit = total_avail
 
             # generate payloads
             self.req.gen_url_payloads(
@@ -338,27 +345,40 @@ class PushshiftAPIBase:
                 self._multithread()
 
         self.req.save_cache()
+        self.output_final()
         return self.req.resp
 
 
     def can_output(self):
         return self.output is not None
 
-    def output_text(self, text:str):
+    def cancel_is_set(self):
         if self.can_output():
-            self.output.append(text)
+            return self.output.cancel_task
+        return False
 
     def output_shards(self, available_shards, total_shards):
         if self.can_output():
             self.output.set_shards(available_shards, total_shards)
 
     def output_progress(self, remaining):
+        #print(remaining, self.possible_results)
         if self.can_output():
-            if self.largest_remaining == sys.maxsize:
-                self.largest_remaining = remaining
-            else:
-                if remaining > self.largest_remaining:
-                    self.largest_remaining = remaining
+            if remaining < sys.maxsize and self.possible_results > 0:
                 self.output.set_remaining(remaining)
-                self.output.update_progress_bar(remaining, self.largest_remaining)
+                if self.limit <= 0:
+                    self.output.update_progress_bar(remaining, self.possible_results)
+                else:
+                    self.output.update_progress_bar(remaining, self.limit)
+
+    def output_final(self):
+        if self.can_output():
+            if self.limit < 0:
+                self.output.set_successful(len(self.req.resp), self.possible_results)
+            else:
+                self.output.set_successful(len(self.req.resp), self.limit)
+
+    def output_error(self, error_msg):
+        if self.can_output():
+            self.output.send_error(error_msg)
             

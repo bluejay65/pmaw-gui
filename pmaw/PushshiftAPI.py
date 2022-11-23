@@ -1,4 +1,6 @@
 from pmaw.PushshiftAPIBase import PushshiftAPIBase
+import logging
+from constants import CRITICAL_MESSAGE
 
 
 class PushshiftAPI(PushshiftAPIBase):

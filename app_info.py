@@ -6,6 +6,8 @@ import constants
 
 data_file_name = 'data'
 cache_file_name = 'cache'
+log_file_name = 'dcfr.log'
+resource_folder_name = 'resources'
 
 app_data_dir = os.path.join(os.environ['APPDATA'], constants.APP_NAME)
 
@@ -45,5 +47,22 @@ class AppInfo():
         AppInfo.save_data(id)
         return id
 
+    def configure_log():
+        if os.path.isfile(AppInfo.get_log_path()):
+            with open(AppInfo.get_log_path(), 'r+') as log:
+                lines = log.readlines()
+                if len(lines) > 1000:
+                    log.seek(0)
+                    log.truncate()
+                    for line in lines[len(lines)-1000:]:
+                        log.write(line)
+                
+
+    def get_log_path():
+        return AppInfo.get_file_path(log_file_name)
+
     def get_file_path(file_name):
         return os.path.join(app_data_dir, file_name)
+
+    def get_resource_folder():
+        return AppInfo.get_file_path(resource_folder_name)
