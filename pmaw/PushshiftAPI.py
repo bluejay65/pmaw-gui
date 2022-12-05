@@ -1,4 +1,6 @@
 from pmaw.PushshiftAPIBase import PushshiftAPIBase
+import logging
+from constants import CRITICAL_MESSAGE
 
 
 class PushshiftAPI(PushshiftAPIBase):
@@ -56,12 +58,6 @@ class PushshiftAPI(PushshiftAPIBase):
             Response generator object
         """
         return self._search(kind='comment', **kwargs)
-
-    def get_num_comments(self, **kwargs):
-        """
-        Returns an integer referring to the number of commments available
-        """
-        return self.get_total_avail(kind='comment', **kwargs)
 
     def search_submissions(self, **kwargs):
         """

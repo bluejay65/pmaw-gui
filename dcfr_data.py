@@ -14,13 +14,14 @@ class Data():
         sum_df.columns = headers
         return sum_df
 
-    def save_sum_fields(df: pd.DataFrame, fields: list, file, file_type: FileType):
+    def save_sum_fields(df: pd.DataFrame, fields: list, file, file_type: FileType, output):
         file = CallPmaw.add_file_type(file, file_type)
         if file_type == FileType.CSV.value:
             Data.sum_fields(df, fields).to_csv(file)
         elif file_type == FileType.XLSX.value:
             Data.sum_fields(df, fields).to_excel(file)
         print('Aggregate Sum saved to ' + file)
+        output.send_message(f'Aggregate Sum saved to {file}')
 
 
     def count_fields(df: pd.DataFrame, fields: list):
@@ -28,13 +29,14 @@ class Data():
         count_df.columns = ['frequency']
         return count_df
 
-    def save_count_fields(df: pd.DataFrame, fields: list, file, file_type: FileType):
+    def save_count_fields(df: pd.DataFrame, fields: list, file, file_type: FileType, output):
         file = CallPmaw.add_file_type(file, file_type)
         if file_type == FileType.CSV.value:
             Data.count_fields(df, fields).to_csv(file)
         elif file_type == FileType.XLSX.value:
             Data.count_fields(df, fields).to_excel(file)
         print('Frequency saved to ' + file)
+        output.send_message(f'Frequency saved to {file}')
 
     
     def gini_coefficient(df: pd.DataFrame, fields: list):
@@ -44,14 +46,32 @@ class Data():
         cumx = np.cumsum(sorted_x, dtype=float)
         return (n + 1 - 2 * np.sum(cumx) / cumx[-1]) / n
 
-    def save_gini_coefficent(df: pd.DataFrame, fields: list, file, file_type: FileType):
-        file = CallPmaw.add_file_type(file, file_type)
+    def save_gini_coefficient(df: pd.DataFrame, fields: list, file, file_type: FileType, output):
+        file = CallPmaw.replace_file_type(file, file_type)
         gini = Data.gini_coefficient(df, fields)
         if file_type == FileType.CSV.value:
             pd.DataFrame({fields[0]+' Gini Coefficient': [gini]}).to_csv(file)
         elif file_type == FileType.XLSX.value:
             pd.DataFrame({fields[0]+' Gini Coefficient': [gini]}).to_excel(file)
+        elif file_type == FileType.TXT.value:
+            with open(file, 'w', encoding='utf-8') as f:
+                f.write(str(gini))
         print('Gini Coefficient of: '+str(gini)+' saved to ' + file)
+        output.send_message(f'Gini Coefficient of: {str(gini)} saved to {file}')
+
+    def gini_rule(df: pd.DataFrame, fields: list):
+        if len(fields) != 1:
+            return 'Only one group may be selected'
+        try:
+            int(df[fields[0]][0])
+        except:
+            return 'The group selected doesn\'t contain numbers'
+        return True
+
+
+    def true_rule(df: pd.DataFrame, fields: list):
+        return True
+
 
 #TODO: fix error when not selecting file
 #TODO: make gini coefficient save in file?
@@ -60,6 +80,8 @@ class Data():
 #TODO: add human readable data field
 
 """
+import random
+
 a = random.random()*10000
 b = random.random()*10000
 c = random.random()*10000
@@ -78,5 +100,5 @@ test_df = pd.DataFrame([['user1', a],
                         columns=['author', 'frequency'])
 
 
-print(Data.gini_coefficient(test_df, ['frequency']))
-"""
+Data.save_gini_coefficient(test_df, ['frequency'], 'test.txt', '.txt', None)
+ """

@@ -1,4 +1,3 @@
-from json import tool
 import sys
 import tkinter as tk
 from tkinter import filedialog
@@ -29,7 +28,7 @@ class SubmissionGUI(BaseGUI):
                     #'Exclude Title Text': EntryType.ENTRY,
                     'Search Body': EntryType.ENTRY,
                     #'Exclude Body Text': EntryType.ENTRY,
-                    'Max Results': EntryType.ENTRY,
+                    'Max Results': EntryType.NUMBER,
                     'Author': EntryType.ENTRY,
                     'Subreddit': EntryType.ENTRY,
                     #'Score': EntryType.RANGE,
@@ -53,6 +52,17 @@ class SubmissionGUI(BaseGUI):
                     'Subreddit': textwrap.fill('Returns submissions from the subreddit(s) in the filter. To search in multiple subreddits, use commas to delineate them.', constants.TEXT_WRAP)
     }
 
+    archived_only_return_fields = ['full_link', 'retrieved_datetime', 'retrieved_on']
+
+    default_return_fields = [
+                            'author',
+                            'created_datetime',
+                            'score',
+                            'selftext',
+                            'subreddit',
+                            'title'
+                            ]
+
     api_fields = {
                     'Search Title and Body': 'q',
                     'Exclude Search Term': 'q:not',
@@ -75,25 +85,26 @@ class SubmissionGUI(BaseGUI):
                     'Posted before': 'before'
     }
 
-    def __init__(self, pmaw, parent, root, **kwargs):
+    def __init__(self, pmaw, parent, root, executor, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
         self.pmaw = pmaw
         self.root = root
+        self.parent = parent
+        self.executor = executor
 
-        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields)
-        self.label_entries.grid(row=0, column=0, rowspan=2)
+        self.label_entries = LabelEntryList(self, self.search_fields, title='Search Filters', tooltip_dict=self.tooltip_fields, labelanchor='n')
+        self.label_entries.grid(row=0, column=0, rowspan=2, sticky='ns')
         self.label_entries.update()
 
-        self.return_entries = Checklist(self, constants.SUBMISSION_RETURN_FIELDS, title='Data to Return', scrollbar=True, height=450)
+        self.return_entries = Checklist(self, constants.SUBMISSION_RETURN_FIELDS, title='Data to Return', scrollbar=True, height=420, labelanchor='n', default_checked=self.default_return_fields, can_clear_all=True, can_select_all=True, can_select_default=True)
 
-        self.return_entries.grid(row=0, column=1)
-        self.reset_return_fields()
+        self.return_entries.grid(row=0, column=1, sticky='new')
 
-        self.file_type_button = Radiolist(self, options=[e.value for e in ExportFileType], title='Save as File Type')
+        self.file_type_button = Radiolist(self, options=[e.value for e in ExportFileType], title='Save as File Type', labelanchor='n')
 
-        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using')
-        self.search_type_button.grid(row=1, column=1)
-        self.search_type_button.select(SearchType.PRAW.value)
+        self.search_type_button = Radiolist(self, options=[e.value for e in SearchType], title='Download Data Using', command='on_search_type_selection', labelanchor='n')
+        self.search_type_button.grid(row=1, column=1, sticky='sew')
+        self.search_type_button.select(SearchType.PMAW.value)
 
         self.file_selected = ''
         self.button_frame = tk.Frame(self)
@@ -115,12 +126,14 @@ class SubmissionGUI(BaseGUI):
     def run(self):
         entry_dict = self.get_entries()
         if entry_dict['q'] is None and entry_dict['title'] is None and entry_dict['selftext'] is None and entry_dict['author'] is None and entry_dict['subreddit'] is None:
-            if not messagebox.askokcancel(message='May return few results if no query, subreddit, or author is defined', title='Data Warning'):
+            messagebox.showerror(title='Impossible Search Filters', message='A Search Term, Author, or Subreddit must be provided')
+            return
+        if entry_dict['before'] is not None and entry_dict['after'] is not None:
+            if entry_dict['before'] < entry_dict['after'] :
+                messagebox.showerror(message='\'Posted Before\' is set to before \'Posted After\'. No data will be available.', title='Impossible Search Filters')
                 return
-        self.root.withdraw()
-        self.pmaw.save_submission_file(entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
-        self.root.deiconify()
-
+        self.parent.select(constants.NotebookPage.OUTPUT_PAGE.value)
+        self.executor.submit(self.pmaw.save_submission_file, entry_dict, file=self.file_selected, file_type=self.file_type_button.get_choice(), search_type=self.search_type_button.get_choice())
     
     def select_file(self):
         self.file_selected = filedialog.asksaveasfilename()
@@ -132,16 +145,11 @@ class SubmissionGUI(BaseGUI):
             self.run_button.grid_forget()
             self.file_button.grid(row=0, column=0)
 
-
-    def reset_return_fields(self):
-        self.return_entries.check_items([
-                                        'author',
-                                        'created_datetime',
-                                        'score',
-                                        'selftext',
-                                        'subreddit',
-                                        'title'
-                                        ])
+    def on_search_type_selection(self, search_type_value):
+        if search_type_value == SearchType.PMAW.value: # archived
+            self.return_entries.show_all_items()
+        elif search_type_value == SearchType.PRAW.value: # reddit
+            self.return_entries.hide_items(self.archived_only_return_fields)
 
 
     def get_entries(self):
@@ -182,3 +190,10 @@ class SubmissionGUI(BaseGUI):
             entry_dict['before'] = None  
 
         return entry_dict
+
+
+    def disable_run(self):
+        self.run_button['state'] = 'disabled'
+
+    def enable_run(self):
+        self.run_button['state'] = 'normal'

@@ -1,10 +1,7 @@
-from msilib.schema import ComboBox
 import tkinter as tk
 import calendar
 from tkinter import ttk
 import datetime
-
-
 
 # A frame with two widgets, a label and an entry
 class LabelDate(tk.Frame):
@@ -27,7 +24,8 @@ class LabelDate(tk.Frame):
     def set_entry(self, date: datetime.date):
         self.date_entry.set_entry(date)
 
-
+    def clear_date(self):
+        self.date_entry.clear()
 
 # Defines an Entry that can be used to enter a date
 class DateEntry(tk.Frame):
@@ -64,13 +62,15 @@ class DateEntry(tk.Frame):
         self.columnconfigure(1, pad=2)
         self.columnconfigure(2, pad=2)
 
-    # Sets the correct number of days when a month is selected
+
+# Sets the correct number of days when a month is selected
     def month_selected(self, event):
+        self.event_generate('<<DateSelected>>')
         if self.month_str.get() == 'January' or self.month_str.get() == 'March' or self.month_str.get() == 'May' or self.month_str.get() == 'July' or self.month_str.get() == 'August' or self.month_str.get() == 'October' or self.month_str.get() == 'December':
             self.set_num_days(31)
         elif self.month_str.get() == 'April' or self.month_str.get() == 'June' or self.month_str.get() == 'September' or self.month_str.get() == 'November':
             self.set_num_days(30)
-        else:
+        elif self.month_str.get() == 'February':
             self.set_num_days(self.get_february_days())
 
         if self.year_str.get() == '':
@@ -78,24 +78,20 @@ class DateEntry(tk.Frame):
         if self.day_str.get() == '':
             self.set_day(1)
 
-
     # Sets the correct number of days when a year is selected
     def year_selected(self, event):
+        self.event_generate('<<DateSelected>>')
         if self.month_str.get() == 'February':
             self.set_num_days(self.get_february_days())
-
         if self.month_str.get() == '':
             self.set_month(0)
         if self.day_str.get() == '':
             self.set_day(1)
-
     def set_day(self, day: int):
         self.day_str.set(day)
-
     def set_month(self, month_num: int):
         self.month_str.set(self.month_list[month_num])
         self.month_selected(None)
-
     def set_year(self, year_num: int):
         self.year_str.set(self.valid_years[0])
         self.year_selected(None)
@@ -105,11 +101,13 @@ class DateEntry(tk.Frame):
         days_list = ['']
         for i in range(num_days):
             days_list.append(i+1)
-
         if self.day_str.get() != '' and int(self.day_str.get()) > num_days:
             self.day_str.set(num_days)
         
         self.day_combobox['values'] = days_list
+
+    def clear_days(self):
+        self.day_combobox['values'] = []
 
     # Checks how many days are in february based on the year selected
     def get_february_days(self):
@@ -132,11 +130,20 @@ class DateEntry(tk.Frame):
             day = int(self.day_str.get())
         else:
             return
-
         return datetime.date(year, month, day)
-
+        
     # Sets the date based on a datetime.date
     def set_entry(self, date: datetime.date):
         self.year_str['value'] = date.year
         self.month_str['value'] = date.month
         self.day_str['value'] = date.day
+
+    def clear(self):
+        self.year_str.set('')
+        self.month_str.set('')
+        self.day_str.set('')
+
+        self.day_combobox['values'] = []
+
+    def bind_selection(self, func):
+        self.bind('<<DateSelected>>', func)

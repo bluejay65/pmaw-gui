@@ -1,27 +1,42 @@
 from enum import Enum
 
-VERSION = '0.2.3'
+VERSION = '0.3.0'
 APP_NAME = 'Dataset Collector for Reddit'
 GUIDE_URL = 'https://docs.google.com/document/d/1ED5SsBsmFxjePdBnY-1NYSxkkXIOgKRVz4O0BIWQDFc/edit?usp=sharing'
 
-COMMENT_WIDTH = 550
+CRITICAL_MESSAGE = 'Report bugs to https://docs.google.com/forms/d/e/1FAIpQLSdEpWlfaD0TLDqUC8P58PUNMy_4wQdn-SMzfnD2gaH9vqkvAw/viewform. Please include this log in your report.'
+
+COMMENT_WIDTH = 520
 COMMENT_HEIGHT = 370
 
-SUBMISSION_WIDTH = 540
+SUBMISSION_WIDTH = 550
 SUBMISSION_HEIGHT = 620
 
-DATA_WIDTH = 310
-DATA_HEIGHT = 350
+DATA_WIDTH = 410
+DATA_HEIGHT = 360
+
+OUTPUT_WIDTH = 520
+OUTPUT_HEIGHT = 160
 
 NOTEBOOK_WRAP = 15
 TEXT_WRAP = 40
+OUTPUT_WRAP = 100
+
+class NotebookPage(Enum):
+    COMMENT_PAGE = 0
+    SUBMISSION_PAGE = 1
+    DATA_PAGE = 2
+    OUTPUT_PAGE = 3
+    GUIDE_PAGE = 4
 
 class FileType(Enum):
     CSV = '.csv'
     XLSX = '.xlsx'
+    TXT = '.txt'
 
 class ExportFileType(Enum):
     CSV = '.csv'
+    TXT = '.txt'
 
 class ImportFileType(Enum):
     CSV = '.csv'

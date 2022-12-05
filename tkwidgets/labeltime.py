@@ -32,12 +32,14 @@ class TimeEntry(tk.Frame):
     def __init__(self, parent, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
 
-        self.time_entry = SpinTimePickerModern(self, orient=constants.HORIZONTAL)
+        self.time_frame = tk.LabelFrame(self)
+        self.time_entry = SpinTimePickerModern(self.time_frame, orient=constants.HORIZONTAL)
         self.time_entry.addAll(constants.HOURS12)
-        self.time_entry.configureAll(bg="#cdcdcd", width=4, hoverbg="#a6a6a6", clickedbg="#606060", clickedcolor="#ffffff")
-        self.time_entry.configure_separator(bg="#cdcdcd")
+        self.time_entry.configureAll(bg="#ffffff", width=3, hoverbg="#e5f1fb", clickedbg="#ffffff", clickedcolor="#000000")
+        self.time_entry.configure_separator(bg="#ffffff")
         self.time_entry.setMins(0)
 
+        self.time_frame.grid(row=0, column=0)
         self.time_entry.grid(row=0, column=0)
 
 

@@ -1,16 +1,22 @@
 from pmaw import PushshiftAPI
 import pandas as pd
 import platform
-from constants import FileType, SearchType, VERSION, APP_NAME
+from constants import FileType, SearchType, VERSION, APP_NAME, CRITICAL_MESSAGE
 from app_info import AppInfo
 import praw, prawcore
 from prawcore import auth, requestor
 import secret_constants
+import logging
 
+log = logging.getLogger(__name__)
 
 class CallPmaw:
-    def __init__(self):
+    def __init__(self, gui=None, output=None, executor=None, main_thread=None):
         self.praw = None
+        self.gui = gui
+        self.output = output
+        self.executor = executor
+        self.main_thread = main_thread
 
     def get_comment_df(self, dict, search_type:SearchType):
         print("\nRunning...")
@@ -31,35 +37,57 @@ class CallPmaw:
 
         if search_type == SearchType.PRAW.value:
             fields.append('id')
-
-            api = PushshiftAPI(praw=self.get_praw())
+            if self.can_multithread():
+                api = PushshiftAPI(praw=self.get_praw(), output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
+            else:
+                api = PushshiftAPI(praw=self.get_praw(), output=self.output, shards_down_behavior=None)
         else:
-            api = PushshiftAPI()
+            if self.can_multithread():
+                api = PushshiftAPI(output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
+            else:
+                api = PushshiftAPI(output=self.output, shards_down_behavior=None)
 
-        if isinstance(after, int) and isinstance(before, int):
-            comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
-        elif isinstance(after, int):
-            comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
-        elif isinstance(before, int):
-            comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+        if self.can_multithread():
+            if isinstance(after, int) and isinstance(before, int):
+                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
+            elif isinstance(after, int):
+                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
+            elif isinstance(before, int):
+                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+            else:
+                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
+
+            df = pd.DataFrame([comment for comment in comments.result()])
+            if self.output.cancel_task:
+                self.output.set_title('Download Cancelled')
+                return
+            self.output.update_progress_bar(1,1)
+            print('Organizing collected data...')
+            self.output.set_title('Organizing Collected Comments')
+            
         else:
-            comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
+            if isinstance(after, int) and isinstance(before, int):
+                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
+            elif isinstance(after, int):
+                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
+            elif isinstance(before, int):
+                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+            else:
+                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
 
-        print('Organizing collected data...')
+            print('Organizing collected data...')
+            df = pd.DataFrame([comment for comment in comments])
 
-        df = pd.DataFrame([comment for comment in comments])
         if df.empty:
-            print('ERROR: No data returned. Pushshift may be offline, or your search filters may be too specific.')
+            log.warning('Returned empty dataframe from PMAW', exc_info=True)
+            self.output.send_error('ERROR: No data returned. Your search filters may be too specific or Pushshift may be missing data.')
             return df
 
         if 'created_datetime' in fields:
             df['created_datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
-        if 'retrieved_datetime' in fields and search_type == SearchType.PMAW.value:
-            try:
-                df['retrieved_datetime'] = pd.to_datetime(df.loc[:, 'retrieved_utc'], unit='s', origin='unix')
-            except:
-                pass
-        df = CallPmaw.remove_extra_fields(df, keep_fields)
+        if 'retrieved_utc' in df.columns and 'retrieved_datetime' in fields and search_type == SearchType.PMAW.value:
+            df['retrieved_datetime'] = pd.to_datetime(df.loc[:, 'retrieved_utc'], unit='s', origin='unix')
+        df = self.remove_extra_fields(df, keep_fields)
 
         return df
 
@@ -93,75 +121,130 @@ class CallPmaw:
 
         if search_type == SearchType.PRAW.value:
             fields.append('id')
-
-            api = PushshiftAPI(praw=self.get_praw())
+            if self.can_multithread():
+                api = PushshiftAPI(praw=self.get_praw(), output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
+            else:
+                api = PushshiftAPI(praw=self.get_praw(), output=self.output, shards_down_behavior=None)
         else:
-            api = PushshiftAPI()
+            if self.can_multithread():
+                api = PushshiftAPI(output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
+            else:
+                api = PushshiftAPI(output=self.output, shards_down_behavior=None)
 
-        if isinstance(after, int) and isinstance(before, int):
-            submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
-        elif isinstance(after, int):
-            submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
-        elif isinstance(before, int):
-            submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+        if self.can_multithread():
+            if isinstance(after, int) and isinstance(before, int):
+                submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+            elif isinstance(after, int):
+                submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+            elif isinstance(before, int):
+                submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+            else:
+                submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+        
+            df = pd.DataFrame([submission for submission in submissions.result()])
+            if self.output.cancel_task:
+                self.output.set_title('Download Cancelled')
+                return
+            self.output.update_progress_bar(1,1)
+            print('Organizing collected data...')
+            self.output.set_title('Organizing Collected Submissions')
+
         else:
-            submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+            if isinstance(after, int) and isinstance(before, int):
+                submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+            elif isinstance(after, int):
+                submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+            elif isinstance(before, int):
+                submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+            else:
+                submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
 
-        print('Organizing collected data...')
+            print('Organizing collected data...')
+            df = pd.DataFrame([s for s in submissions])
 
-        df = pd.DataFrame([s for s in submissions])
         if df.empty:
-            print('ERROR: No data returned. Pushshift may be offline, or your search filters may be too specific.')
+            print('ERROR: No data returned. Your search filters may be too specific or Pushshift may be missing data.')
+            self.output.send_error('ERROR: No data returned. Your search filters may be too specific or Pushshift may be missing data.')
             return df
 
         if 'created_datetime' in fields:
             df['created_datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
-        if 'retrieved_datetime' in fields and search_type == SearchType.PMAW.value:
-            try:
-                df['retrieved_datetime'] = pd.to_datetime(df.loc[:, 'retrieved_on'], unit='s', origin='unix')
-            except:
-                pass
-        df = CallPmaw.remove_extra_fields(df, keep_fields)
+        if 'retrieved_utc' in df.columns and 'retrieved_datetime' in fields and search_type == SearchType.PMAW.value:
+            df['retrieved_datetime'] = pd.to_datetime(df.loc[:, 'retrieved_on'], unit='s', origin='unix')
+        df = self.remove_extra_fields(df, keep_fields)
 
         return df
 
 
     def save_comment_file(self, dict, file, file_type:FileType, search_type:SearchType):
-        df = self.get_comment_df(dict, search_type)
-        if not df.empty:
-            file = CallPmaw.add_file_type(file, file_type)
-            error = CallPmaw.save_df_to_file(df, file, file_type)
-            if not error:
-                print('Comment data saved to ' + file)
+        log.info('Starting comment search of %s for %s', search_type, str(dict))
+        try:
+            self.gui.disable_run()
+            self.output.reset()
+            self.output.set_title('Searching for Comments')
+            self.output.start_progress_bar()
+            df = self.get_comment_df(dict, search_type)
+            if self.output.cancel_task:
+                self.gui.enable_run()
+                return
+            if not df.empty:
+                file = CallPmaw.add_file_type(file, file_type)
+                error = self.save_df_to_file(df, file, file_type)
+                if not error:
+                    print('Comment data saved to ' + file)
+                    self.output.set_save_file(file)
+                    self.output.set_title('Comments Saved')
+            self.gui.enable_run()
+        except:
+            log.critical(CRITICAL_MESSAGE, exc_info=True)
+                
         
     def save_submission_file(self, dict, file, file_type:FileType, search_type:SearchType):
-        df = self.get_submission_df(dict, search_type)
-        if not df.empty:
-            file = CallPmaw.add_file_type(file, file_type)
-            error = CallPmaw.save_df_to_file(df, file, file_type)
-            if not error:
-                print('Submission data saved to ' + file)
+        log.info('Starting submission search of %s for %s', search_type, str(dict))
+        try:
+            self.gui.disable_run()
+            self.output.reset()
+            self.output.set_title('Searching for Submissions')
+            self.output.start_progress_bar()
+            df = self.get_submission_df(dict, search_type)
+            if self.output.cancel_task:
+                self.gui.enable_run()
+                return
+            if not df.empty:
+                file = CallPmaw.add_file_type(file, file_type)
+                error = self.save_df_to_file(df, file, file_type)
+                if not error:
+                    print('Submission data saved to ' + file)
+                    self.output.set_save_file(file)
+                    self.output.set_title('Submissions Saved')
+            self.gui.enable_run()
+        except:
+            log.critical(CRITICAL_MESSAGE, exc_info=True)
 
-    def save_df_to_file(df, file, file_type:FileType):
+
+    def save_df_to_file(self, df, file, file_type:FileType):
         print('Saving organized data...')
         if file_type == FileType.CSV.value:
             try:
                 df.to_csv(file)
             except:
-                print('ERROR: Unable to save to file. Check if file is open in another program.')
+                log.debug('Unable to save dataframe to file.', exc_info=True)
+                self.output.send_error('ERROR: Unable to save to file. Check if file is open in another program.')
                 return -1
         elif file_type == FileType.XLSX.value:
             try:
                 df.to_excel(file, index=False, engine='xlsxwriter')
             except:
-                print('ERROR: Unable to save to file. Check if file is open in another program.')
+                log.debug('Unable to save dataframe to file.', exc_info=True)
+                self.output.send_error('ERROR: Unable to save to file. Check if file is open in another program.')
                 return -1
         else:
+            log.error('file_type was not an accepted value. Value was: %s', file_type, exc_info=True)
             raise ValueError('file_type was not an accepted value. Value was: '+ file_type)
         return None
 
 
-    def remove_extra_fields(df: pd.DataFrame, fields: list):
+    def remove_extra_fields(self, df: pd.DataFrame, fields: list):
         try:
             return df[fields]
         except:
@@ -173,7 +256,8 @@ class CallPmaw:
                     safe_cols.append(field)
                 else:
                     err_cols.append(field)
-            print('WARNING: Requested Data '+str(err_cols)+' is not available')
+            log.warning('Requested Data %s is not available', str(err_cols), exc_info=True)
+            self.output.send_error('WARNING: Requested Data '+str(err_cols)+' is not available')
             return df[safe_cols]
 
 
@@ -230,3 +314,27 @@ class CallPmaw:
         if not file.endswith(file_type):
             file += file_type
         return file
+
+    def remove_file_type(file):
+        file_type_list = [member.value for member in FileType]
+        while True:
+            for file_type in file_type_list:
+                if file.endswith(file_type):
+                    file = file[:file.rfind(file_type)]
+                    continue
+            break
+        return file
+
+    def replace_file_type(file, file_type):
+        file = CallPmaw.remove_file_type(file)
+        return CallPmaw.add_file_type(file, file_type)
+
+    def can_multithread(self):
+        if self.main_thread is not None and self.executor is not None:
+            return True
+        return False
+
+"""
+api = PushshiftAPI()
+comments = api.search_comments(q='hello', subreddit='beauty', limit=500)
+"""

@@ -1,0 +1,93 @@
+{
+    "data": [],
+    "metadata": {
+        "after": 1633238603,
+        "agg_size": 100,
+        "api_version": "3.0",
+        "before": 1633296612,
+        "es_query": {
+            "query": {
+                "bool": {
+                    "filter": {
+                        "bool": {
+                            "must": [
+                                {
+                                    "terms": {
+                                        "subreddit": [
+                                            "beauty"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "range": {
+                                        "created_utc": {
+                                            "gt": 1633238603
+                                        }
+                                    }
+                                },
+                                {
+                                    "range": {
+                                        "created_utc": {
+                                            "lt": 1633296612
+                                        }
+                                    }
+                                },
+                                {
+                                    "simple_query_string": {
+                                        "default_operator": "and",
+                                        "fields": [
+                                            "body"
+                                        ],
+                                        "query": "hello"
+                                    }
+                                }
+                            ],
+                            "should": []
+                        }
+                    },
+                    "must_not": []
+                }
+            },
+            "size": 250,
+            "sort": {
+                "created_utc": "desc"
+            }
+        },
+        "execution_time_milliseconds": 12.96,
+        "index": "rc_delta3",
+        "limit": "500",
+        "metadata": "true",
+        "q": "hello",
+        "ranges": [
+            {
+                "range": {
+                    "created_utc": {
+                        "gt": 1633238603
+                    }
+                }
+            },
+            {
+                "range": {
+                    "created_utc": {
+                        "lt": 1633296612
+                    }
+                }
+            }
+        ],
+        "results_returned": 0,
+        "shards": {
+            "failed": 0,
+            "skipped": 0,
+            "successful": 4,
+            "total": 4
+        },
+        "size": 250,
+        "sort": "desc",
+        "sort_type": "created_utc",
+        "subreddit": [
+            "beauty"
+        ],
+        "timed_out": false,
+        "total_results": 0
+    }
+}
