@@ -84,8 +84,13 @@ class PushshiftAPIBase:
                 return r['data']
             else:
                 if status != 429:
-                    self.output_error(f"HTTP {status} - {reason}")
-                    log.warning(f"HTTP {status} - {reason}")
+                    if reason:
+                        log.warning(f"HTTP {status} - {reason}")
+                        self.output_error(f"HTTP {status} - {reason}")
+                    else:
+                        log.warning(f"HTTP {status}")
+                        self.output_error(f"HTTP {status}")
+
         except:
             log.critical(CRITICAL_MESSAGE, exc_info=True)
 
@@ -119,7 +124,8 @@ class PushshiftAPIBase:
                 self._rate_limit._check_fail()
 
                 shards = self.metadata_.get('shards')
-                self.output_shards(shards['successful'], shards['total'])
+                if shards:
+                    self.output_shards(shards['successful'], shards['total'])
 
                 # check if shards are down
                 if self.shards_are_down and (self.shards_down_behavior is not None):

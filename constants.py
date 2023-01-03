@@ -33,6 +33,8 @@ class FileType(Enum):
     CSV = '.csv'
     XLSX = '.xlsx'
     TXT = '.txt'
+    SVG = '.svg'
+    PNG = '.png' #TODO remove svg and png when you can
 
 class ExportFileType(Enum):
     CSV = '.csv'

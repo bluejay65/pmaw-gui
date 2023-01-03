@@ -134,6 +134,8 @@ class OutputGUI(BaseGUI):
             self.remaining_text.set(f'{expected - returned}/{expected} results missing')
         self.wheel.clear_wheel()
         self.cancel_button.place_forget()
+        self.fill_progress_bar()
+
 
 
     def set_shards(self, available:int, total:int):
@@ -189,4 +191,12 @@ class OutputGUI(BaseGUI):
             self.progress_bar['value'] = 100
         else:
             self.progress_bar['value'] = ((largest_remaining - remaining) / largest_remaining) * 100
+
+    
+    def fill_progress_bar(self):
+        mode = str(self.progress_bar.cget('mode'))
+        if mode == 'indeterminate':
+            self.progress_bar.config(mode='determinate')
+            self.progress_bar.stop()
+        self.progress_bar['value'] = 100
 

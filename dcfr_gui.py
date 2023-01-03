@@ -119,8 +119,11 @@ except:
 #TODO change name
 #TODO design and add icon
 #TODO add more lines to output text
+
+
 #TODO fix typing in time
 #TODO visualization
 #TODO search filters too specific versus no data available in time frame (have search of just the before and after, see what happens)
+#TODO move everything that has to do with editing file names to its own file
 
 #reddit data collection and analysis tool (redcat)

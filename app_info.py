@@ -3,6 +3,9 @@ import os
 from cryptography.fernet import Fernet
 from secret_constants import APP_INFO_KEY
 import constants
+import logging
+
+log = logging.getLogger('__name__')
 
 data_file_name = 'data'
 cache_file_name = 'cache'
@@ -42,7 +45,7 @@ class AppInfo():
                     if len(id) == 30:
                         return id
                 except:
-                    pass
+                    log.info('Key invalid. Generating a new one.')
         id = uuid.uuid4().hex[:-2]
         AppInfo.save_data(id)
         return id

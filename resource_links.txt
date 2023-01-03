@@ -1,2 +1,0 @@
-name,url,type
-x.png,https://upload.wikimedia.org/wikipedia/commons/5/5f/Red_X.svg,svg
