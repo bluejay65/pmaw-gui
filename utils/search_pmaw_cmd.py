@@ -1,5 +1,5 @@
 import argparse 
-import search_pmaw
+from backend.search_pmaw import CallPmaw
 
 
 parser = argparse.ArgumentParser()
@@ -16,5 +16,5 @@ parser.add_argument('--file' , type=str)
 args = parser.parse_args()
 args_dict = vars(args)
 
-api = search_pmaw.CallPmaw()
+api = CallPmaw()
 api.get_df(args_dict)

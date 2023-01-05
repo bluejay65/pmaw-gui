@@ -5,26 +5,40 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
-from requests import HTTPError
+from pmaw.types.exceptions import HTTPError, HTTPNotFoundError
+from pmaw.Metadata import Metadata
 
 from pmaw.RateLimit import RateLimit
 from pmaw.Request import Request
-from constants import CRITICAL_MESSAGE
+from backend.constants import CRITICAL_MESSAGE
 
 
 log = logging.getLogger(__name__)
 
 
 class PushshiftAPIBase:
-    _base_url = 'https://{domain}.pushshift.io/{{endpoint}}'
+    _base_url = "https://{domain}.pushshift.io/{{endpoint}}"
+    def __init__(
+        self,
+        num_workers=10,
+        max_sleep=60,
+        rate_limit=60,
+        base_backoff=0.5,
+        batch_size=None,
+        shards_down_behavior="warn",
+        limit_type="average",
+        jitter=None,
+        checkpoint=10,
+        file_checkpoint=20,
+        praw=None,
+        executor=None,
+        output=None,
+        main_thread=None):
 
-    def __init__(self, num_workers=10, max_sleep=60, rate_limit=60, base_backoff=0.5,
-                 batch_size=None, shards_down_behavior='warn', limit_type='average', jitter=None,
-                 checkpoint=10, file_checkpoint=20, praw=None, executor=None, output=None, main_thread=None):
         self.num_workers = num_workers
         self.domain = 'api'
         self.shards_down_behavior = shards_down_behavior
-        self.metadata_ = {}
+        self.meta = Metadata({})
         self.resp_dict = {}
         self.checkpoint = checkpoint
         self.file_checkpoint = file_checkpoint
@@ -39,8 +53,7 @@ class PushshiftAPIBase:
             self.batch_size = num_workers
 
         # instantiate rate limiter
-        self._rate_limit = RateLimit(
-            rate_limit, base_backoff, limit_type, max_sleep, jitter)
+        self._rate_limit = RateLimit(rate_limit, base_backoff, limit_type, max_sleep, jitter)
 
     @property
     def base_url(self):
@@ -56,6 +69,7 @@ class PushshiftAPIBase:
         try:
             self._impose_rate_limit()
             r = requests.get(url, params=payload)
+            print(r.url)
             status = r.status_code
             reason = r.reason #TODO save html of pages from pushshift to test with when it's down
 
@@ -66,18 +80,12 @@ class PushshiftAPIBase:
                 r = json.loads(r.text)
 
                 # check if shards are down
-                self.metadata_ = r.get('metadata', {})
-                total_results = self.metadata_.get('total_results', None)
+                self.meta = Metadata(r.get("metadata", {}))
+                total_results = self.meta.total_results
                 if self.possible_results <= 0:
                     self.possible_results = total_results
                 if total_results:
-                    after, before = None, None
-                    for param in self.metadata_['ranges']:
-                        created = param['range']['created_utc']
-                        if created.get('gt', None):
-                            after = created['gt']
-                        elif created.get('lt', None):
-                            before = created['lt']
+                    after, before = self.meta.ranges
                     if after and before:
                         self.resp_dict[(after, before)] = total_results
 
@@ -93,13 +101,6 @@ class PushshiftAPIBase:
 
         except:
             log.critical(CRITICAL_MESSAGE, exc_info=True)
-
-    @property
-    def shards_are_down(self):
-        shards = self.metadata_.get('shards')
-        if shards is None:
-            return
-        return shards['successful'] != shards['total']
 
     def _multithread(self, check_total=False):
         if self.executor:
@@ -123,19 +124,14 @@ class PushshiftAPIBase:
                 # reset attempts if no failures
                 self._rate_limit._check_fail()
 
-                shards = self.metadata_.get('shards')
-                if shards:
-                    self.output_shards(shards['successful'], shards['total'])
-
                 # check if shards are down
-                if self.shards_are_down and (self.shards_down_behavior is not None):
+                if self.meta.shards_are_down and self.shards_down_behavior is not None:
                     shards_down_message = "Not all PushShift shards are active. Query results may be incomplete."
-                    if self.shards_down_behavior == 'warn':
+                    if self.shards_down_behavior == "warn":
                         log.warning(shards_down_message)
-                    if self.shards_down_behavior == 'stop':
+                    if self.shards_down_behavior == "stop":
                         self._shutdown(executor)
-                        raise RuntimeError(
-                            shards_down_message + f' {len(self.req.req_list)} unfinished requests.')
+                        raise RuntimeError(shards_down_message + f" {len(self.req.req_list)} unfinished requests.")
                 if not check_total:
                     self.num_batches += 1
                     if self.num_batches % self.file_checkpoint == 0:
@@ -213,15 +209,13 @@ class PushshiftAPIBase:
                         break
 
                     # handle time slicing logic
-                    if 'before' in payload and 'after' in payload:
-                        before = payload['before']
-                        after = payload['after']
-                        log.debug(
-                            f"Time slice from {after} - {before} returned {len(data)} results")
-                        total_results = self.resp_dict.get(
-                            (after, before), 0)
-                        log.debug(
-                            f'{total_results} total results for this time slice')
+                    if 'until' in payload and 'since' in payload:
+                        until = payload['until']
+                        since = payload['since']
+                        log.debug(f"Time slice from {since} - {until} returned {len(data)} results")
+                        total_results = self.resp_dict.get((since, until), 0)
+                        log.debug(f"{total_results} total results for this time slice")
+
                         # calculate remaining results
                         remaining = total_results - len(data)
 
@@ -238,10 +232,16 @@ class PushshiftAPIBase:
                             # Fix issue where Pushshift occasionally reports remaining results that it is
                             # unable to return - len(data) == 0 when this happens                    
                             if len(data) > 0:
-                                before = data[-1]['created_utc']
+                                until = data[-1]['created_utc']
                                 # generate payloads
-                                self.req.gen_slices(
-                                    url, payload, after, before, num)
+                                self.req.gen_slices(url, payload, since, until, num)
+
+            except HTTPNotFoundError as exc:
+                log.debug(f"Request Failed -- {exc}")
+                # dont retry ids not found
+                # it looks like submission/comment_ids/ returns 404s now
+                if "ids" not in self.req.payload:
+                    self.req.req_list.appendleft(url_pay)
                 self.output_progress(self.req.limit)
 
             except HTTPError as exc:
@@ -298,6 +298,12 @@ class PushshiftAPIBase:
                 filter_fn=None,
                 **kwargs):
 
+        # TODO: remove this warning once 404s stop happening
+        if kind == "submission_comment_ids":
+            log.warning(
+                "submission comment id search may return no results due to COLO switchover"
+            )
+
         # raise error if aggs are requested
         if 'aggs' in kwargs:
             err_msg = "Aggregations support for {} has not yet been implemented, please use the PSAW package for your request"
@@ -312,7 +318,7 @@ class PushshiftAPIBase:
             self.limit = -1
 
         self.possible_results = 0
-        self.metadata_ = {}
+        self.meta = Metadata({})
         self.resp_dict = {}
         self.count = 0
         self.req = Request(copy.deepcopy(kwargs), filter_fn, kind,
@@ -324,7 +330,7 @@ class PushshiftAPIBase:
         if kind == 'submission_comment_ids':
             endpoint = f'{dataset}/submission/comment_ids/'
         else:
-            endpoint = f'{dataset}/{kind}/search'
+            endpoint = f'{dataset}/search/{kind}/'
 
         url = self.base_url.format(endpoint=endpoint)
 
@@ -335,11 +341,10 @@ class PushshiftAPIBase:
                 self.req.req_list.appendleft((url, self.req.payload))
                 self._multithread(check_total=True)
 
-                total_avail = self.metadata_.get('total_results', 0)
+                total_avail = self.meta.total_results
 
                 if self.limit == -1:
                     self.req.limit = total_avail
-                    
 
                 log.info(f'{total_avail} result(s) available in Pushshift')
 

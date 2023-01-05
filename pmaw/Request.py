@@ -14,7 +14,7 @@ from pmaw.utils.slices import timeslice, mapslice
 from pmaw.utils.filter import apply_filter
 from pmaw.Response import Response
 
-from constants import CRITICAL_MESSAGE
+from backend.constants import CRITICAL_MESSAGE
 
 
 log = logging.getLogger(__name__)
@@ -39,13 +39,13 @@ class Request:
         if filter_fn is not None and not callable(filter_fn):
             raise ValueError('filter_fn must be a callable function')
 
-        if safe_exit and self.payload.get('before', None) is None:
-            # warn the user not to use safe_exit without setting before,
+        if safe_exit and self.payload.get('until', None) is None:
+            # warn the user not to use safe_exit without setting until,
             # doing otherwise will make it impossible to resume without modifying 
-            # future query to use before value from first run
+            # future query to use until value from first run
             before = int(dt.datetime.now().timestamp())
-            payload['before'] = before
-            warnings.warn(f'Using safe_exit without setting before value is not recommended. Setting before to {before}')
+            payload['until'] = before
+            warnings.warn(f'Using safe_exit without setting until value is not recommended. Setting until to {before}')
 
         if self.praw is not None:
             if safe_exit:
@@ -199,27 +199,36 @@ class Request:
     def _add_nec_args(self, payload):
         """Adds arguments to the payload as necessary."""
 
-        payload['size'] = self.max_results_per_request
+        payload["size"] = self.max_results_per_request
 
-        if 'sort' not in payload:
-            payload['sort'] = 'desc'
-        elif payload.get('sort') != 'desc':
-            err_msg = "Support for non-default sort has not been implemented as it may cause unexpected results"
+        # set to true to get a real count,
+        # otherwise `total_results` estimate maxes out at 10000
+        payload["track_total_hits"] = True
+
+        # we need to sort by created_utc for slicing to work
+        payload["sort"] = "created_utc"
+        if "order" not in payload:
+            payload["order"] = "desc"
+        elif payload.get("order") != "desc":
+            err_msg = "Support for non-default order has not been implemented as it may cause unexpected results"
             raise NotImplementedError(err_msg)
-
-        if 'metadata' not in payload:
-            payload['metadata'] = 'true'
-        if 'before' not in payload:
-            payload['before'] = int(dt.datetime.now().timestamp())
-        if 'filter' in payload:
-            if not isinstance(payload['filter'], list):
-                if isinstance(payload['filter'], str):
-                    payload['filter'] = [payload['filter']]
+        if "until" not in payload:
+            payload["until"] = int(dt.datetime.now().timestamp())
+        if "filter" in payload:
+            if not isinstance(payload["filter"], list):
+                if isinstance(payload["filter"], str):
+                    payload["filter"] = [payload["filter"]]
                 else:
-                    payload['filter'] = list(payload['filter'])
+                    payload["filter"] = list(payload["filter"])
+
             # make sure that the created_utc field is returned
-            if 'created_utc' not in payload['filter']:
-                payload['filter'].append('created_utc')
+            if "created_utc" not in payload["filter"]:
+                payload["filter"].append("created_utc")
+                
+            # there is a bug where multiple filters like:
+            # filter=<field>&filter=<field2>
+            # only returns field2
+            payload["filter"] = ",".join(payload["filter"])
 
     def gen_slices(self, url, payload, after, before, num):
         # create time slices
@@ -271,22 +280,22 @@ class Request:
                 self.req_list.extend(url_payloads)
 
             else:
-                if 'after' not in self.payload:
+                if 'since' not in self.payload:
                     search_window = dt.timedelta(days=search_window)
                     num = batch_size
-                    before = self.payload['before']
+                    before = self.payload['until']
                     after = int((dt.datetime.fromtimestamp(
                         before) - search_window).timestamp())
 
                     # set before to after for future time slices
-                    self.payload['before'] = after
+                    self.payload['until'] = after
 
                 else:
-                    before = self.payload['before']
-                    after = self.payload['after']
+                    before = self.payload['until']
+                    after = self.payload['since']
 
                     # set before to avoid repeated time slices when there are missed responses
-                    self.payload['before'] = after
+                    self.payload['until'] = after
                     num = batch_size
 
                 # generate payloads

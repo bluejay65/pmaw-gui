@@ -1,11 +1,11 @@
 from pmaw import PushshiftAPI
 import pandas as pd
 import platform
-from constants import FileType, SearchType, VERSION, APP_NAME, CRITICAL_MESSAGE
-from app_info import AppInfo
+from backend.constants import FileType, SearchType, VERSION, APP_NAME, CRITICAL_MESSAGE
+from backend.app_info import AppInfo
 import praw, prawcore
 from prawcore import auth, requestor
-import secret_constants
+from backend import secret_constants
 import logging
 
 log = logging.getLogger(__name__)
@@ -48,14 +48,25 @@ class CallPmaw:
                 api = PushshiftAPI(output=self.output, shards_down_behavior=None)
 
         if self.can_multithread():
-            if isinstance(after, int) and isinstance(before, int):
-                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
-            elif isinstance(after, int):
-                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
-            elif isinstance(before, int):
-                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+            if isinstance(limit, int):
+                if isinstance(after, int) and isinstance(before, int):
+                    comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
+                elif isinstance(after, int):
+                    comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
+                elif isinstance(before, int):
+                    comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+                else:
+                    comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
             else:
-                comments = self.executor.submit(api.search_comments, q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
+                if isinstance(after, int) and isinstance(before, int):
+                    comments = self.executor.submit(api.search_comments, q=q, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
+                elif isinstance(after, int):
+                    comments = self.executor.submit(api.search_comments, q=q, fields=fields, author=author, subreddit=subreddit, after=after)
+                elif isinstance(before, int):
+                    comments = self.executor.submit(api.search_comments, q=q, fields=fields, author=author, subreddit=subreddit, before=before)
+                else:
+                    comments = self.executor.submit(api.search_comments, q=q, fields=fields, author=author, subreddit=subreddit)
+
 
             df = pd.DataFrame([comment for comment in comments.result()])
             if self.output.cancel_task:
@@ -66,14 +77,24 @@ class CallPmaw:
             self.output.set_title('Organizing Collected Comments')
             
         else:
-            if isinstance(after, int) and isinstance(before, int):
-                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
-            elif isinstance(after, int):
-                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
-            elif isinstance(before, int):
-                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+            if isinstance(limit, int):
+                if isinstance(after, int) and isinstance(before, int):
+                    comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
+                elif isinstance(after, int):
+                    comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after)
+                elif isinstance(before, int):
+                    comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before)
+                else:
+                    comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
             else:
-                comments = api.search_comments(q=q, limit=limit, fields=fields, author=author, subreddit=subreddit)
+                if isinstance(after, int) and isinstance(before, int):
+                    comments = api.search_comments(q=q, fields=fields, author=author, subreddit=subreddit, after=after, before=before)
+                elif isinstance(after, int):
+                    comments = api.search_comments(q=q, fields=fields, author=author, subreddit=subreddit, after=after)
+                elif isinstance(before, int):
+                    comments = api.search_comments(q=q, fields=fields, author=author, subreddit=subreddit, before=before)
+                else:
+                    comments = api.search_comments(q=q, fields=fields, author=author, subreddit=subreddit)
 
             print('Organizing collected data...')
             df = pd.DataFrame([comment for comment in comments])
@@ -132,14 +153,24 @@ class CallPmaw:
                 api = PushshiftAPI(output=self.output, shards_down_behavior=None)
 
         if self.can_multithread():
-            if isinstance(after, int) and isinstance(before, int):
-                submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
-            elif isinstance(after, int):
-                submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
-            elif isinstance(before, int):
-                submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+            if isinstance(limit, int):
+                if isinstance(after, int) and isinstance(before, int):
+                    submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                elif isinstance(after, int):
+                    submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                elif isinstance(before, int):
+                    submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                else:
+                    submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
             else:
-                submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                if isinstance(after, int) and isinstance(before, int):
+                    submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                elif isinstance(after, int):
+                    submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, fields=fields, author=author, subreddit=subreddit, after=after, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                elif isinstance(before, int):
+                    submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, fields=fields, author=author, subreddit=subreddit, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                else:
+                    submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
         
             df = pd.DataFrame([submission for submission in submissions.result()])
             if self.output.cancel_task:
@@ -150,14 +181,24 @@ class CallPmaw:
             self.output.set_title('Organizing Collected Submissions')
 
         else:
-            if isinstance(after, int) and isinstance(before, int):
-                submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
-            elif isinstance(after, int):
-                submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
-            elif isinstance(before, int):
-                submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+            if isinstance(limit, int):
+                if isinstance(after, int) and isinstance(before, int):
+                    submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                elif isinstance(after, int):
+                    submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, after=after, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                elif isinstance(before, int):
+                    submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                else:
+                    submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
             else:
-                submissions = api.search_submissions(q=q, title=title, selftext=selftext, limit=limit, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                if isinstance(after, int) and isinstance(before, int):
+                    submissions = api.search_submissions(q=q, title=title, selftext=selftext, fields=fields, author=author, subreddit=subreddit, after=after, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                elif isinstance(after, int):
+                    submissions = api.search_submissions(q=q, title=title, selftext=selftext, fields=fields, author=author, subreddit=subreddit, after=after, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                elif isinstance(before, int):
+                    submissions = api.search_submissions(q=q, title=title, selftext=selftext, fields=fields, author=author, subreddit=subreddit, before=before, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
+                else:
+                    submissions = api.search_submissions(q=q, title=title, selftext=selftext, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
 
             print('Organizing collected data...')
             df = pd.DataFrame([s for s in submissions])

@@ -1,13 +1,11 @@
-from cgitb import text
-import sys
 import textwrap
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
-from base_gui import BaseGUI
-from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
-from constants import DataType, ExportFileType, SearchType
-import constants
+from gui.base_gui import BaseGUI
+from tkpywidgets import LabelEntryList, Checklist, EntryType, Radiolist
+from backend.constants import ExportFileType, SearchType
+from backend import constants
 
 
 class CommentGUI(BaseGUI):
@@ -126,9 +124,9 @@ class CommentGUI(BaseGUI):
                 entry_dict[self.api_fields[key]] = None
 
         if entry_dict['limit']:
-            entry_dict['limit'] = int(entry_dict['limit']) #TODO Nonetype isn't working if nothing is entered
+            entry_dict['limit'] = int(entry_dict['limit'])
         else:
-            entry_dict['limit'] = sys.maxsize
+            entry_dict['limit'] = None
 
         entry_dict['fields'] = self.return_entries.get_checked_items()
 

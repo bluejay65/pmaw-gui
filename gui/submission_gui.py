@@ -1,13 +1,12 @@
-import sys
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
-from tkwidgets import LabelEntryList, Checklist, EntryType, Radiolist
-from base_gui import BaseGUI
+from tkpywidgets import LabelEntryList, Checklist, EntryType, Radiolist
+from gui.base_gui import BaseGUI
 from enum import Enum
-from constants import ExportFileType, SearchType
+from backend.constants import ExportFileType, SearchType
 import textwrap
-import constants
+import backend.constants as constants
 
 
 class Dropdowns(Enum):
@@ -173,9 +172,9 @@ class SubmissionGUI(BaseGUI):
                     entry_dict[self.api_fields[key]] = None
 
         if entry_dict['limit']:
-            entry_dict['limit'] = int(entry_dict['limit']) #TODO Nonetype isn't working if nothing is entered
+            entry_dict['limit'] = int(entry_dict['limit'])
         else:
-            entry_dict['limit'] = sys.maxsize
+            entry_dict['limit'] = None
             
         entry_dict['fields'] = self.return_entries.get_checked_items()
 

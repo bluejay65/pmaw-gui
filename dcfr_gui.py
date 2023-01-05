@@ -1,11 +1,11 @@
 import tkinter as tk
-import comment_gui, data_gui, submission_gui, output_gui
-import constants
+from gui import comment_gui, data_gui, submission_gui, output_gui
+import backend.constants as constants
 import webbrowser
-from resource_manager import ResourceManager
-from app_info import AppInfo
+from backend.resource_manager import ResourceManager
+from backend.app_info import AppInfo
 from tkinter import ttk
-from search_pmaw import CallPmaw
+from backend.search_pmaw import CallPmaw
 import sys
 import signal
 from threading import Event
@@ -120,7 +120,7 @@ except:
 #TODO design and add icon
 #TODO add more lines to output text
 
-
+#TODO set up environments, have PMAW able to update and make it not break things by having the functions you edit in a seperate file that takes precedence
 #TODO fix typing in time
 #TODO visualization
 #TODO search filters too specific versus no data available in time frame (have search of just the before and after, see what happens)

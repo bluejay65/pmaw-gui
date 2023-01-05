@@ -1,7 +1,6 @@
 import os
-import file_names
-from search_pmaw import CallPmaw
-from constants import FileType
+from backend import file_names
+from backend.search_pmaw import CallPmaw
 from cairosvg import svg2png
 from PIL import Image, ImageTk
 
@@ -20,7 +19,6 @@ class ResourceManager():
                         svg2png(file_obj=f, write_to=os.path.join(resource_folder, imported_file_name))
 
                 self.resource_file_dict[imported_file_name] = os.path.join(resource_folder, imported_file_name)
-                print(self.resource_file_dict)
             
                 
     def load_image(self, name, size=(0,0)):

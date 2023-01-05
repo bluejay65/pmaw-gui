@@ -1,8 +1,8 @@
 import tkinter as tk
-import constants
+import backend.constants as constants
 from tkinter import ttk, font, messagebox
-from base_gui import BaseGUI
-from tkwidgets import HorizontalScrolledFrame, Console
+from gui.base_gui import BaseGUI
+from tkpywidgets import HorizontalScrolledFrame, Console
 
 
 class OutputGUI(BaseGUI):

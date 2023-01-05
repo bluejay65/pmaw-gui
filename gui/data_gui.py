@@ -1,13 +1,13 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, font
-from tkwidgets import Checklist, ButtonList, Console, HorizontalScrolledFrame
-from base_gui import BaseGUI
-from constants import FileType, ExportFileType, DataType
-from dcfr_data import Data
-from search_pmaw import CallPmaw
+from backend.constants import FileType, ExportFileType, DataType
+from tkpywidgets import Checklist, ButtonList, Console, HorizontalScrolledFrame
+from gui.base_gui import BaseGUI
+from backend.dcfr_data import Data
+from backend.search_pmaw import CallPmaw
 import pandas as pd
 import textwrap
-import constants
+import backend.constants as constants
 
 
 class DataGUI(BaseGUI): #TODO get way to count total comments returned

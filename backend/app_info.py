@@ -1,8 +1,8 @@
 import uuid
 import os
 from cryptography.fernet import Fernet
-from secret_constants import APP_INFO_KEY
-import constants
+from backend import constants
+from backend.secret_constants import APP_INFO_KEY
 import logging
 
 log = logging.getLogger('__name__')
