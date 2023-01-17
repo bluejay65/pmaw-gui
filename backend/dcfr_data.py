@@ -5,15 +5,19 @@ from backend.constants import FileType
 
 
 class Data():
+
+    # returns the sum of entries that match every field
     def sum_fields(df: pd.DataFrame, fields: list):
         sum_df = df.groupby(fields, sort=False).sum()
 
+        # names the headers 'total field_name'
         headers = []
         for i in range(len(sum_df.columns)):
             headers.append ('total ' + sum_df.columns[i])
         sum_df.columns = headers
         return sum_df
 
+    # saves the output of sum_fields() to a file
     def save_sum_fields(df: pd.DataFrame, fields: list, file, file_type: FileType, output):
         file = CallPmaw.add_file_type(file, file_type)
         if file_type == FileType.CSV.value:
@@ -23,12 +27,13 @@ class Data():
         print('Aggregate Sum saved to ' + file)
         output.send_message(f'Aggregate Sum saved to {file}')
 
-
+    # returns the number of entries that match every field
     def count_fields(df: pd.DataFrame, fields: list):
         count_df = df.groupby(fields, sort=False).count().iloc[:, 0:len(fields)]
         count_df.columns = ['frequency']
         return count_df
 
+    # saves the output of count_fields() to a file
     def save_count_fields(df: pd.DataFrame, fields: list, file, file_type: FileType, output):
         file = CallPmaw.add_file_type(file, file_type)
         if file_type == FileType.CSV.value:
@@ -38,14 +43,15 @@ class Data():
         print('Frequency saved to ' + file)
         output.send_message(f'Frequency saved to {file}')
 
-    
-    def gini_coefficient(df: pd.DataFrame, fields: list):
-        x = df[fields[0]].to_numpy()
+    # returns the gini coeff of the entries of the first element of field
+    def gini_coefficient(df: pd.DataFrame, field: list):
+        x = df[field[0]].to_numpy()
         sorted_x = np.sort(x)
         n = len(x)
         cumx = np.cumsum(sorted_x, dtype=float)
         return (n + 1 - 2 * np.sum(cumx) / cumx[-1]) / n
 
+    # saves the output of gini_coefficient() to a file
     def save_gini_coefficient(df: pd.DataFrame, fields: list, file, file_type: FileType, output):
         file = CallPmaw.replace_file_type(file, file_type)
         gini = Data.gini_coefficient(df, fields)
@@ -59,6 +65,7 @@ class Data():
         print('Gini Coefficient of: '+str(gini)+' saved to ' + file)
         output.send_message(f'Gini Coefficient of: {str(gini)} saved to {file}')
 
+    # verifies one field is selected and the first element is a number
     def gini_rule(df: pd.DataFrame, fields: list):
         if len(fields) != 1:
             return 'Only one group may be selected'
@@ -68,37 +75,5 @@ class Data():
             return 'The group selected doesn\'t contain numbers'
         return True
 
-
     def true_rule(df: pd.DataFrame, fields: list):
         return True
-
-
-#TODO: fix error when not selecting file
-#TODO: make gini coefficient save in file?
-#TODO: make it more clear which data thing is selected
-#TODO: move data file button
-#TODO: add human readable data field
-
-"""
-import random
-
-a = random.random()*10000
-b = random.random()*10000
-c = random.random()*10000
-d = random.random()*10000
-e = random.random()*10000
-f = random.random()*10000
-
-print(str(a)+', '+str(b)+', '+str(c)+', '+str(d)+', '+str(e)+', '+str(f))
-
-test_df = pd.DataFrame([['user1', a],
-                        ['user2', b],
-                        ['user3', c],
-                        ['user2', d],
-                        ['user3', e],
-                        ['user3', f]],
-                        columns=['author', 'frequency'])
-
-
-Data.save_gini_coefficient(test_df, ['frequency'], 'test.txt', '.txt', None)
- """

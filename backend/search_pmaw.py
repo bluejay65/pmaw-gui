@@ -1,4 +1,4 @@
-from pmaw import PushshiftAPI
+from pmawinterface.PushshiftAPI_replacement import PushshiftAPIReplacement
 import pandas as pd
 import platform
 from backend.constants import FileType, SearchType, VERSION, APP_NAME, CRITICAL_MESSAGE
@@ -11,6 +11,7 @@ import logging
 log = logging.getLogger(__name__)
 
 class CallPmaw:
+
     def __init__(self, gui=None, output=None, executor=None, main_thread=None):
         self.praw = None
         self.gui = gui
@@ -18,9 +19,8 @@ class CallPmaw:
         self.executor = executor
         self.main_thread = main_thread
 
+    # returns a dataframe of information from pmaw based on filters in dict and the search_type
     def get_comment_df(self, dict, search_type:SearchType):
-        print("\nRunning...")
-
         q = dict['q']
         limit = dict['limit']
         fields: list = dict['fields']
@@ -29,24 +29,29 @@ class CallPmaw:
         after = dict['after']
         before = dict['before']
 
-        keep_fields = fields.copy()
+        # makes sure the data used to get datetimes is gathered
+        keep_fields = fields.copy() # fields that will be returned to the user
         if 'created_datetime' in fields and 'created_utc' not in fields:
             fields.append('created_utc')
         if 'retrieved_datetime' in fields and 'retrieved_utc' not in fields:
             fields.append('retrieved_utc')
 
+        # creates the pmaw object, either with/without praw and with/without passing an executor to be used
         if search_type == SearchType.PRAW.value:
             fields.append('id')
             if self.can_multithread():
-                api = PushshiftAPI(praw=self.get_praw(), output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
+                api = PushshiftAPIReplacement(praw=self.get_praw(), output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
             else:
-                api = PushshiftAPI(praw=self.get_praw(), output=self.output, shards_down_behavior=None)
+                api = PushshiftAPIReplacement(praw=self.get_praw(), output=self.output, shards_down_behavior=None)
         else:
             if self.can_multithread():
-                api = PushshiftAPI(output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
+                api = PushshiftAPIReplacement(output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
             else:
-                api = PushshiftAPI(output=self.output, shards_down_behavior=None)
+                api = PushshiftAPIReplacement(output=self.output, shards_down_behavior=None)
 
+        # TODO break this into a method
+        # starts the task to run pmaw with all the filters applied
+        # different functions are called if an executor is used, if a limit is set, if before or after are set
         if self.can_multithread():
             if isinstance(limit, int):
                 if isinstance(after, int) and isinstance(before, int):
@@ -67,11 +72,12 @@ class CallPmaw:
                 else:
                     comments = self.executor.submit(api.search_comments, q=q, fields=fields, author=author, subreddit=subreddit)
 
-
+            # saves result from task as a dataframe
             df = pd.DataFrame([comment for comment in comments.result()])
             if self.output.cancel_task:
                 self.output.set_title('Download Cancelled')
                 return
+            # updates output
             self.output.update_progress_bar(1,1)
             print('Organizing collected data...')
             self.output.set_title('Organizing Collected Comments')
@@ -99,11 +105,13 @@ class CallPmaw:
             print('Organizing collected data...')
             df = pd.DataFrame([comment for comment in comments])
 
+        # can occur if pushshift is down, filters are too specific, or redcat is broken
         if df.empty:
             log.warning('Returned empty dataframe from PMAW', exc_info=True)
             self.output.send_error('ERROR: No data returned. Your search filters may be too specific or Pushshift may be missing data.')
             return df
 
+        # created columns for datetimes using utc time
         if 'created_datetime' in fields:
             df['created_datetime'] = pd.to_datetime(df.loc[:, 'created_utc'], unit='s', origin='unix')
         if 'retrieved_utc' in df.columns and 'retrieved_datetime' in fields and search_type == SearchType.PMAW.value:
@@ -112,9 +120,8 @@ class CallPmaw:
 
         return df
 
+    # returns a dataframe of information from pmaw based on filters in dict and the search_type
     def get_submission_df(self, dict, search_type: SearchType):
-        print("\nRunning...")
-
         q = dict['q']
         #q_not = dict['q:not']
         title = dict['title']
@@ -134,24 +141,29 @@ class CallPmaw:
         spoiler = dict['spoiler']
         contest_mode = dict['contest_mode']
 
-        keep_fields = fields.copy()
+        # makes sure the data used to get datetimes is gathered
+        keep_fields = fields.copy() # fields that will be returned to the user
         if 'created_datetime' in fields:
             fields.append('created_utc')
         if 'retrieved_datetime' in fields:
             fields.append('retrieved_on')
 
+        # creates the pmaw object, either with/without praw and with/without passing an executor to be used
         if search_type == SearchType.PRAW.value:
             fields.append('id')
             if self.can_multithread():
-                api = PushshiftAPI(praw=self.get_praw(), output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
+                api = PushshiftAPIReplacement(praw=self.get_praw(), output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
             else:
-                api = PushshiftAPI(praw=self.get_praw(), output=self.output, shards_down_behavior=None)
+                api = PushshiftAPIReplacement(praw=self.get_praw(), output=self.output, shards_down_behavior=None)
         else:
             if self.can_multithread():
-                api = PushshiftAPI(output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
+                api = PushshiftAPIReplacement(output=self.output, executor=self.executor, main_thread=self.main_thread, shards_down_behavior=None)
             else:
-                api = PushshiftAPI(output=self.output, shards_down_behavior=None)
+                api = PushshiftAPIReplacement(output=self.output, shards_down_behavior=None)
 
+        # TODO break this into a method
+        # starts the task to run pmaw with all the filters applied
+        # different functions are called if an executor is used, if a limit is set, if before or after are set
         if self.can_multithread():
             if isinstance(limit, int):
                 if isinstance(after, int) and isinstance(before, int):
@@ -172,6 +184,7 @@ class CallPmaw:
                 else:
                     submissions = self.executor.submit(api.search_submissions, q=q, title=title, selftext=selftext, fields=fields, author=author, subreddit=subreddit, over_18=over_18, is_video=is_video, locked=locked, stickied=stickied, spoiler=spoiler, contest_mode=contest_mode)
         
+            # saves result from task as a dataframe
             df = pd.DataFrame([submission for submission in submissions.result()])
             if self.output.cancel_task:
                 self.output.set_title('Download Cancelled')
@@ -374,8 +387,3 @@ class CallPmaw:
         if self.main_thread is not None and self.executor is not None:
             return True
         return False
-
-"""
-api = PushshiftAPI()
-comments = api.search_comments(q='hello', subreddit='beauty', limit=500)
-"""

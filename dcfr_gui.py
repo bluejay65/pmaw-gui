@@ -93,6 +93,7 @@ class DcfrGUI():
             signal.signal(getattr(signal, 'SIG'+sig), self.set_exit)
 
     def set_exit(self, *args):
+        print('exit')
         self.exit.set()
         self.executor.shutdown(wait=False, cancel_futures=True)
 
@@ -110,6 +111,7 @@ except:
     log.critical(constants.CRITICAL_MESSAGE, exc_info=True)
 
 
+#TODO get output working again while download occurs
 #TODO guide crashes if not connected to internet
 #TODO if file is open save to another file
 #TODO save recent searches and let user fill them back in

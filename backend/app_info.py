@@ -15,6 +15,8 @@ resource_folder_name = 'resources'
 app_data_dir = os.path.join(os.environ['APPDATA'], constants.APP_NAME)
 
 class AppInfo():
+
+    # saves encrypted device ID to data file
     def save_data(info: str):
         info_path = AppInfo.get_file_path(data_file_name)
         if not os.path.exists(app_data_dir):
@@ -23,10 +25,10 @@ class AppInfo():
         with open(info_path, 'wb') as f:
             f.write(AppInfo.encrypt_txt(info))
 
-
     def encrypt_txt(text: str):
         return Fernet(APP_INFO_KEY).encrypt(text.encode())
 
+    # TODO save recent searches to cache
     def save_to_cache(text: str):
         cache_path = AppInfo.get_file_path(data_file_name)
         if not os.path.exists(app_data_dir):
@@ -36,6 +38,7 @@ class AppInfo():
         with open(cache_path, 'w') as f:
             pass
 
+    # reads the device ID from data file or creates one and saves it to data file
     def get_device_id():
         info_path = AppInfo.get_file_path(data_file_name)
         if os.path.exists(info_path):
@@ -50,6 +53,7 @@ class AppInfo():
         AppInfo.save_data(id)
         return id
 
+    # shortens the log to the last 1000 lines
     def configure_log():
         if os.path.isfile(AppInfo.get_log_path()):
             with open(AppInfo.get_log_path(), 'r+') as log:
@@ -60,7 +64,6 @@ class AppInfo():
                     for line in lines[len(lines)-1000:]:
                         log.write(line)
                 
-
     def get_log_path():
         return AppInfo.get_file_path(log_file_name)
 
